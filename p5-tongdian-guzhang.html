@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>交流电流回路调试 · 通电定故障点</title>
+<style>
+  :root{--blue:#0B3D91;--orange:#F5A623;--green:#2E7D32;--ink:#2B2F36;--bg:#F5F7FA;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:24px 18px 60px}
+  header{background:var(--blue);color:#fff;border-radius:8px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+  header:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border:8px solid rgba(255,255,255,.12);border-radius:50%}
+  header h1{margin:0;font-size:22px;letter-spacing:.5px}
+  header p{margin:8px 0 0;font-size:13px;opacity:.85}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px;font-size:13px}
+  .pill{background:#fff;border:1px solid #dfe5ee;border-radius:999px;padding:4px 12px}
+  .pill b{color:var(--blue)}
+  .card{background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 3px rgba(11,61,145,.08)}
+  .scn{font-size:15px;margin:0 0 6px}
+  .scn span{display:inline-block;background:var(--orange);color:#fff;font-size:12px;border-radius:4px;padding:1px 8px;margin-right:8px;vertical-align:2px}
+  .data{background:#F0F4FB;border-left:4px solid var(--blue);padding:10px 14px;margin:14px 0 18px;font-size:14px;border-radius:0 6px 6px 0}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid #dfe5ee;border-radius:8px;padding:12px 14px;margin:10px 0;font-size:14.5px;cursor:pointer;transition:.15s;font-family:inherit;color:var(--ink)}
+  .opt:hover{border-color:var(--blue);background:#F7FAFF}
+  .opt.right{border-color:var(--green);background:#EDF7EE}
+  .opt.wrong{border-color:#C62828;background:#FDECEC}
+  .opt:disabled{cursor:default}
+  .fb{display:none;margin-top:14px;font-size:14px;border-radius:6px;padding:12px 14px}
+  .fb.ok{display:block;background:#EDF7EE;border-left:4px solid var(--green)}
+  .fb.no{display:block;background:#FDECEC;border-left:4px solid #C62828}
+  .fb .src{display:block;margin-top:6px;font-size:12.5px;color:#5a6472}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button.main{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .end{display:none}
+  .score{font-size:34px;color:var(--blue);font-weight:700;margin:6px 0}
+  .note{margin-top:26px;font-size:12px;color:#6b7280;border-top:1px dashed #d7dee8;padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>通电定故障点 · 交流电流回路调试</h1>
+    <p>项目5 二次回路调试 ｜ 技能5 交流电流回路调试 ｜ 小游戏（约 4 分钟）</p>
+  </header>
+
+  <div class="bar">
+    <span class="pill">进度 <b id="p">1 / 6</b></span>
+    <span class="pill">得分 <b id="s">0</b></span>
+    <span class="pill">满分 <b>60</b></span>
+  </div>
+
+  <div class="card" id="stage">
+    <p class="scn"><span id="tag">情境</span><b id="title"></b></p>
+    <div class="data" id="data"></div>
+    <div id="opts"></div>
+    <div class="fb" id="fb"></div>
+    <div class="actions">
+      <button class="main" id="next" disabled>下一题 →</button>
+      <button class="ghost" id="restart">重来</button>
+    </div>
+  </div>
+
+  <div class="card end" id="done">
+    <p class="scn"><span>完成</span><b>本小游戏结束</b></p>
+    <div class="score" id="final">0 分</div>
+    <p id="comment" style="font-size:14.5px"></p>
+    <div class="actions"><button class="main" id="again">再练一次</button></div>
+  </div>
+
+  <p class="note">[AI起草·待人工核定] 判据依据：DL/T 995-2016《继电保护和电网安全自动装置检验规程》、GB/T 50976-2014《继电保护及二次回路安装及验收规范》。本页仅作课堂练习，不作考核依据。</p>
+</div>
+
+<script>
+const DATA = [
+  {
+    title: "通流时发现二次侧电流比一次换算值小一半",
+    data: "一台 200/5 的 CT，一次通 100 A，二次侧钳形表读数约 1.25 A（理论应为 2.5 A）。回路外观未见断线。",
+    opts: [
+      {t:"判断为准确性误差，属正常范围，直接记录", ok:false, why:"差 50% 已远超误差限，不能按正常记录。"},
+      {t:"先查二次是否两点接地、再查是否有分流支路（并接的保护/短接片）", ok:true, why:"通流偏小一半，最常见原因是二次回路存在分流旁路（短接片未断开、并接支路分流），其次是两点接地。"},
+      {t:"把钳形表换到一次侧再测一次", ok:false, why:"一次侧读数不解决二次分流问题，换位置测不出原因。"},
+      {t:"直接汇报装置测量不准，申请换装置", ok:false, why:"未排除回路原因就判装置，属误判。"}
+    ],
+    src: "依据：DL/T 995-2016 §5.3.2.2（交流电流回路检验：通流试验应检查电流回路完整性与变比）、§5.3.1.2 d)（二次回路一点接地）"
+  },
+  {
+    title: "二次负担是否合格",
+    data: "CT 额定二次负荷 25 VA，实测回路总阻抗折算 1.2 Ω（额定 5 A）。",
+    opts: [
+      {t:"1.2 Ω 对应 30 VA，超过额定，应减小回路负担或换更大容量 CT", ok:true, why:"S=I²Z=5²×1.2=30 VA＞25 VA，超额定容量，长期运行会影响准确级。"},
+      {t:"1.2 Ω 小于额定，合格", ok:false, why:"要先折算成 VA 再与额定容量比较，不能直接比阻抗数值。"},
+      {t:"只要通流读数准，负担可以不测", ok:false, why:"负担超标往往在故障电流下才暴露，通流读数正常不代表合格。"},
+      {t:"把额定二次负荷改成 30 VA 再判合格", ok:false, why:"改铭牌参数不是解决办法。"}
+    ],
+    src: "依据：DL/T 995-2016 §5.3.2.2（二次负担测定）；实际二次负荷应不超过额定二次负荷（归因待核，以厂家参数表为准）"
+  },
+  {
+    title: "变比与极性核对",
+    data: "P1 进 P2 出、S1 出 S2 回，实测 S1 侧电流方向与预期相反。",
+    opts: [
+      {t:"极性接反，应把 S1、S2 对调后复测", ok:true, why:"极性错误会直接导致保护拒动或误动，必须在调试阶段纠正。"},
+      {t:"方向反说明 CT 坏了，换 CT", ok:false, why:"先排除接线极性问题，不能直接判设备损坏。"},
+      {t:"在装置里把 CT 极性设置改成反向即可", ok:false, why:"用软件参数掩盖接线错误，后续检修会重复出错，属不可接受做法。"},
+      {t:"不影响通流大小，可忽略", ok:false, why:"极性决定差动、方向元件的动作方向，绝不可忽略。"}
+    ],
+    src: "依据：DL/T 995-2016 §5.3.2.2（变比、极性检验）；GB/T 50976-2014 §5.3（二次回路接线检查）"
+  },
+  {
+    title: "一点接地检查",
+    data: "该 CT 二次回路在开关场端子箱与保护屏两处各有一根接地线。",
+    opts: [
+      {t:"两处接地更可靠，保留", ok:false, why:"两点接地会形成地网环流，可能引起保护误动，是典型反措禁止项。"},
+      {t:"只保留保护屏（或按设计指定的唯一一点），另一处拆除", ok:true, why:"电流互感器二次回路必须且只能一点接地，接地点按设计指定。"},
+      {t:"把两处接地都拆掉", ok:false, why:"完全不接地会失去人身与设备保护，同样不允许。"},
+      {t:"加装开关后接地，运行中随便投退", ok:false, why:"接地刀闸的投退有严格规定，不能随意。"}
+    ],
+    src: "依据：DL/T 995-2016 §5.3.1.2 d)（二次回路一点接地）；GB/T 40091-2021 §7.1（二次安措）"
+  },
+  {
+    title: "通流后装置采样核对",
+    data: "通流 2.5 A，装置采样显示 2.47 A；同回路另一相显示 0.00 A。",
+    opts: [
+      {t:"2.47 A 在误差内可接受；0.00 A 那一路必须查开路", ok:true, why:"1.2% 属合理误差；0.00 A 说明该相回路开路或未接入，必须查明。"},
+      {t:"两相都不合格，整组回路重做", ok:false, why:"误差相合格，整组重做属过度处理。"},
+      {t:"0.00 A 是装置无此相，属正常", ok:false, why:"三相电流回路应齐全，缺一相即为缺陷。"},
+      {t:"把显示 0.00 的那一路屏蔽掉", ok:false, why:"屏蔽缺陷会造成保护拒动，是严重违规。"}
+    ],
+    src: "依据：DL/T 995-2016 §5.3.2.2（通流后装置采样核对）；GB/T 14285-2023 对电流回路完整性的要求"
+  },
+  {
+    title: "收工前的记录",
+    data: "六项试验均已完成，现场已恢复。",
+    opts: [
+      {t:"口头向班长汇报即可", ok:false, why:"检验必须有书面记录，口头汇报不构成可追溯证据。"},
+      {t:"填写检验记录并在投运后一个月内提交调试报告", ok:true, why:"记录与报告是投运条件之一，也是后续运维的依据。"},
+      {t:"等全站调试完再一起补记", ok:false, why:"事后补记容易失真，且中间发现问题无从追溯。"},
+      {t:"记录只写「合格」两个字", ok:false, why:"记录须含实测数据与判据，只写结论无法复核。"}
+    ],
+    src: "依据：DL/T 995-2016 §5.5.1.4（记录）；GB/T 50976-2014 §3.0.6（投运后一个月内提交调试报告）、§8.1.3（记录表）"
+  }
+];
+
+let i = 0, score = 0, locked = false;
+const $ = (id) => document.getElementById(id);
+
+function render() {
+  const q = DATA[i];
+  locked = false;
+  $("tag").textContent = "情境 " + (i + 1);
+  $("title").textContent = q.title;
+  $("data").textContent = q.data;
+  $("p").textContent = (i + 1) + " / " + DATA.length;
+  $("s").textContent = score;
+  $("fb").className = "fb";
+  $("fb").innerHTML = "";
+  $("next").disabled = true;
+  $("next").textContent = (i === DATA.length - 1) ? "看结果 →" : "下一题 →";
+  const box = $("opts");
+  box.innerHTML = "";
+  q.opts.forEach((o, k) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = String.fromCharCode(65 + k) + ". " + o.t;
+    b.onclick = () => choose(b, o);
+    box.appendChild(b);
+  });
+}
+
+function choose(btn, o) {
+  if (locked) return;
+  locked = true;
+  const q = DATA[i];
+  const all = $("opts").querySelectorAll("button");
+  all.forEach((b) => (b.disabled = true));
+  q.opts.forEach((oo, k) => {
+    if (oo.ok) all[k].classList.add("right");
+  });
+  if (o.ok) {
+    score += 10;
+    $("s").textContent = score;
+  } else {
+    btn.classList.add("wrong");
+  }
+  const fb = $("fb");
+  fb.className = "fb " + (o.ok ? "ok" : "no");
+  fb.innerHTML = (o.ok ? "✅ " : "❌ ") + o.why + '<span class="src">' + q.src + "</span>";
+  $("next").disabled = false;
+}
+
+$("next").onclick = () => {
+  if (i < DATA.length - 1) {
+    i++;
+    render();
+  } else {
+    $("stage").style.display = "none";
+    $("done").style.display = "block";
+    $("final").textContent = score + " 分";
+    $("comment").textContent =
+      score >= 50 ? "判断稳定，可以进入实操前的答辩环节。" :
+      score >= 30 ? "方向基本对，个别判据还含糊——回看模块5 的判据表再练一次。" :
+                    "判据不牢。建议先读本节判据表（纹波、负担、极性、一点接地、记录）再来。";
+  }
+};
+
+$("restart").onclick = $("again").onclick = () => {
+  i = 0; score = 0;
+  $("stage").style.display = "block";
+  $("done").style.display = "none";
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
