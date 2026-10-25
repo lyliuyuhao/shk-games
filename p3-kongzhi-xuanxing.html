@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>控制回路选型 · 设计控制回路</title>
+<style>
+  :root{--blue:#0B3D91;--orange:#F5A623;--green:#2E7D32;--ink:#2B2F36;--bg:#F5F7FA;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:24px 18px 60px}
+  header{background:var(--blue);color:#fff;border-radius:8px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+  header:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border:8px solid rgba(255,255,255,.12);border-radius:50%}
+  header h1{margin:0;font-size:22px;letter-spacing:.5px}
+  header p{margin:8px 0 0;font-size:13px;opacity:.85}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px;font-size:13px}
+  .pill{background:#fff;border:1px solid #dfe5ee;border-radius:999px;padding:4px 12px}
+  .pill b{color:var(--blue)}
+  .card{background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 3px rgba(11,61,145,.08)}
+  .scn{font-size:15px;margin:0 0 6px}
+  .scn span{display:inline-block;background:var(--orange);color:#fff;font-size:12px;border-radius:4px;padding:1px 8px;margin-right:8px;vertical-align:2px}
+  .data{background:#F0F4FB;border-left:4px solid var(--blue);padding:10px 14px;margin:14px 0 18px;font-size:14px;border-radius:0 6px 6px 0}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid #dfe5ee;border-radius:8px;padding:12px 14px;margin:10px 0;font-size:14.5px;cursor:pointer;transition:.15s;font-family:inherit;color:var(--ink)}
+  .opt:hover{border-color:var(--blue);background:#F7FAFF}
+  .opt.right{border-color:var(--green);background:#EDF7EE}
+  .opt.wrong{border-color:#C62828;background:#FDECEC}
+  .opt:disabled{cursor:default}
+  .fb{display:none;margin-top:14px;font-size:14px;border-radius:6px;padding:12px 14px}
+  .fb.ok{display:block;background:#EDF7EE;border-left:4px solid var(--green)}
+  .fb.no{display:block;background:#FDECEC;border-left:4px solid #C62828}
+  .fb .src{display:block;margin-top:6px;font-size:12.5px;color:#5a6472}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button.main{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .end{display:none}
+  .score{font-size:34px;color:var(--blue);font-weight:700;margin:6px 0}
+  .note{margin-top:26px;font-size:12px;color:#6b7280;border-top:1px dashed #d7dee8;padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>控制回路选型 · 设计控制回路</h1>
+    <p>项目3 二次回路设计 ｜ 3.4 设计控制回路 ｜ 小游戏（约 5 分钟）</p>
+  </header>
+  <div class="bar">
+    <span class="pill">进度 <b id="p">1 / 6</b></span>
+    <span class="pill">得分 <b id="s">0</b></span>
+    <span class="pill">满分 <b>60</b></span>
+  </div>
+  <div class="card" id="stage">
+    <p class="scn"><span id="tag">情境</span><b id="title"></b></p>
+    <div class="data" id="data"></div>
+    <div id="opts"></div>
+    <div class="fb" id="fb"></div>
+    <div class="actions">
+      <button class="main" id="next" disabled>下一题 →</button>
+      <button class="ghost" id="restart">重来</button>
+    </div>
+  </div>
+  <div class="card end" id="done">
+    <p class="scn"><span>完成</span><b>本小游戏结束</b></p>
+    <div class="score" id="final">0 分</div>
+    <p id="comment" style="font-size:14.5px"></p>
+    <div class="actions"><button class="main" id="again">再练一次</button></div>
+  </div>
+  <div class="note">
+    [AI起草·待人工核定] 判据依据：DL/T 995-2016《继电保护和电网安全自动装置检验规程》、GB/T 50976-2014《继电保护及二次回路安装及验收规范》、GB/T 14285-2023、GB 26860-2011 及出版稿《二次回路设计与安装调试》相关任务。
+    本页仅作课堂练习，不作考核依据。
+  </div>
+</div>
+<script>
+var QS = [{"tag": "防跳", "title": "断路器机构已带机械防跳，操作箱还要投防跳吗？", "data": "110kV 线路断路器，机构自带防跳。", "opts": ["不投，只保留一套，另一套退出", "两套都投更可靠", "两套都退出", "随便"], "ans": 0, "right": "两套同时投入会形成寄生回路，现场表现是分合闸位置指示同时点亮。", "wrong": "两套同投的典型现象就是红绿灯一起亮；曾有远方操作时机构防跳被切换把手闭锁、操作箱防跳兜底未成的事故隐患。见 GB/T 50976-2014、DL/T 317-2025 第 6.3.7 b) 款。", "src": "GB/T 50976-2014（操作箱防跳与机构防跳不得同时使用）；DL/T 317-2025 第 6.3.7 b) 款"}, {"tag": "压降", "title": "控制回路导体截面按什么选？", "data": "控制电源母线至分合闸线圈。", "opts": ["保证最大负荷时压降不超过额定电压的 10%", "不低于 2.5mm² 即可", "按经验选 4mm²", "越细越省钱"], "ans": 0, "right": "主回路压降限制在 10% 以内，保证线圈得到足够动作电压。", "wrong": "截面不足压降过大，线圈可能拒动。见 DL/T 995-2016（控制回路压降要求）。", "src": "DL/T 995-2016（控制回路导体截面应保证最大负荷时母线至分合闸线圈压降不超过额定电压 10%，见该规程控制回路检验相关条款）"}, {"tag": "自保持", "title": "操作箱自保持线圈的动作电流上限？", "data": "跳合闸自保持回路设计。", "opts": ["不大于额定跳（合）闸电流的 50%", "不大于 80%", "不大于 10%", "没有限制"], "ans": 0, "right": "自保持线圈动作电流不大于 50% 额定跳合闸电流、线圈压降小于 5%。", "wrong": "取值过大就会挤占跳合闸线圈的电压，导致动作不可靠。见 DL/T 995-2016 第 5.3.6.3 条 h) 款。", "src": "DL/T 995-2016 第 5.3.6.3 条 h)"}, {"tag": "监视", "title": "控制回路监视要监视哪些？", "data": "设计控制回路监视功能。", "opts": ["控制电源、跳合闸位置、跳合闸回路完整性三项都要", "只监视电源", "只监视位置", "只监视断线"], "ans": 0, "right": "控制回路应具备电源监视、位置监视、回路完整性监视三项功能。", "wrong": "漏一项就可能在故障时不知情——例如回路断了却没有任何告警。见 GB/T 14285-2023。", "src": "GB/T 14285-2023 第 4.1 节（控制回路应具备控制电源监视、跳合闸位置监视、跳合闸回路完整性监视三项功能）"}, {"tag": "解除", "title": "命令脉冲为什么必须自动解除？", "data": ".合闸命令为脉冲型。", "opts": ["防止命令持续存在导致断路器反复跳合（跳跃）", "为了省电", "为了加快动作", "便于测试"], "ans": 0, "right": "命令脉冲自动解除是防跳的第一道设计措施。", "wrong": "命令不解除加上接点粘死，就会出现合了跳、跳了又合。见出版稿任务3.4「辅助触点、闭锁接点与命令解除」。", "src": "出版稿《二次回路设计与安装调试》3.4 设计控制回路（原理/判读类，不作判据）"}, {"tag": "端子", "title": "设计端子排时，一个端子最多接几根线？", "data": "端子排设计阶段。", "opts": ["一根", "两根（一进一出）", "四根", "不限制"], "ans": 0, "right": "一个端子只接一根线，这是设计口径，便于查线、隔离与试验。", "wrong": "一端多线会让查线无法定位、拆线无法恢复。见出版稿任务3.8「一个端子只接一根线的设计意义」。", "src": "出版稿《二次回路设计与安装调试》3.4 设计控制回路（原理/判读类，不作判据）"}];
+var i = 0, score = 0, locked = false;
+var $ = function(id){return document.getElementById(id)};
+function render(){
+  var q = QS[i];
+  $('p').textContent = (i+1) + ' / ' + QS.length;
+  $('s').textContent = score;
+  $('tag').textContent = q.tag;
+  $('title').textContent = q.title;
+  $('data').textContent = q.data;
+  var box = $('opts'); box.innerHTML = '';
+  q.opts.forEach(function(t, k){
+    var b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button'; b.textContent = String.fromCharCode(65+k) + '. ' + t;
+    b.onclick = function(){ pick(k, b); };
+    box.appendChild(b);
+  });
+  var fb = $('fb'); fb.className = 'fb'; fb.innerHTML = '';
+  $('next').disabled = true; locked = false;
+}
+function pick(k, btn){
+  if(locked) return; locked = true;
+  var q = QS[i];
+  var all = $('opts').querySelectorAll('.opt');
+  for(var j=0;j<all.length;j++){ all[j].disabled = true; }
+  var fb = $('fb');
+  if(k === q.ans){
+    btn.classList.add('right'); score += 10; $('s').textContent = score;
+    fb.className = 'fb ok';
+    fb.innerHTML = '<b>✔ 对了</b><br>' + q.right + '<span class="src">依据：' + q.src + '</span>';
+  } else {
+    btn.classList.add('wrong');
+    all[q.ans].classList.add('right');
+    fb.className = 'fb no';
+    fb.innerHTML = '<b>✘ 不对</b><br>' + q.wrong + '<span class="src">依据：' + q.src + '</span>';
+  }
+  $('next').disabled = false;
+}
+$('next').onclick = function(){
+  i++;
+  if(i >= QS.length){ $('stage').style.display='none'; $('done').style.display='block';
+    $('final').textContent = score + ' 分';
+    var c = score >= 60 ? '过关。判据记住了，可以上真设备。' : '没过 60。把错题的依据再看一遍，然后重来。';
+    $('comment').textContent = c; return; }
+  render();
+};
+$('restart').onclick = function(){ i=0; score=0; $('stage').style.display='block'; $('done').style.display='none'; render(); };
+$('again').onclick = function(){ i=0; score=0; $('stage').style.display='block'; $('done').style.display='none'; render(); };
+render();
+</script>
+</body>
+</html>
