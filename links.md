@@ -9,3 +9,4 @@
 - [p6-fancuo-zhaolou.html](https://lyliuyuhao.github.io/shk-games/p6-fancuo-zhaolou.html)
 - [p7-tiaozha-shunxu.html](https://lyliuyuhao.github.io/shk-games/p7-tiaozha-shunxu.html)
 - [p8-xuduizi-peidui.html](https://lyliuyuhao.github.io/shk-games/p8-xuduizi-peidui.html)
+- [p5-jiaoliu-dianya-fanzhaocuo.html](https://lyliuyuhao.github.io/shk-games/p5-jiaoliu-dianya-fanzhaocuo.html)
