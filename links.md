@@ -6,3 +6,4 @@
 - [p2-bianbi-jixing.html](https://lyliuyuhao.github.io/shk-games/p2-bianbi-jixing.html)
 - [p3-kongzhi-xuanxing.html](https://lyliuyuhao.github.io/shk-games/p3-kongzhi-xuanxing.html)
 - [p4-jiexian-shunxu.html](https://lyliuyuhao.github.io/shk-games/p4-jiexian-shunxu.html)
+- [p6-fancuo-zhaolou.html](https://lyliuyuhao.github.io/shk-games/p6-fancuo-zhaolou.html)
