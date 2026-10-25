@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>图实不符找错 · 二次回路查线、对线</title>
+<style>
+  :root{--blue:#0B3D91;--orange:#F5A623;--green:#2E7D32;--ink:#2B2F36;--bg:#F5F7FA;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:24px 18px 60px}
+  header{background:var(--blue);color:#fff;border-radius:8px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+  header:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border:8px solid rgba(255,255,255,.12);border-radius:50%}
+  header h1{margin:0;font-size:22px;letter-spacing:.5px}
+  header p{margin:8px 0 0;font-size:13px;opacity:.85}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px;font-size:13px}
+  .pill{background:#fff;border:1px solid #dfe5ee;border-radius:999px;padding:4px 12px}
+  .pill b{color:var(--blue)}
+  .card{background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 3px rgba(11,61,145,.08)}
+  .scn{font-size:15px;margin:0 0 6px}
+  .scn span{display:inline-block;background:var(--orange);color:#fff;font-size:12px;border-radius:4px;padding:1px 8px;margin-right:8px;vertical-align:2px}
+  .data{background:#F0F4FB;border-left:4px solid var(--blue);padding:10px 14px;margin:14px 0 18px;font-size:14px;border-radius:0 6px 6px 0}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid #dfe5ee;border-radius:8px;padding:12px 14px;margin:10px 0;font-size:14.5px;cursor:pointer;transition:.15s;font-family:inherit;color:var(--ink)}
+  .opt:hover{border-color:var(--blue);background:#F7FAFF}
+  .opt.right{border-color:var(--green);background:#EDF7EE}
+  .opt.wrong{border-color:#C62828;background:#FDECEC}
+  .opt:disabled{cursor:default}
+  .fb{display:none;margin-top:14px;font-size:14px;border-radius:6px;padding:12px 14px}
+  .fb.ok{display:block;background:#EDF7EE;border-left:4px solid var(--green)}
+  .fb.no{display:block;background:#FDECEC;border-left:4px solid #C62828}
+  .fb .src{display:block;margin-top:6px;font-size:12.5px;color:#5a6472}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button.main{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .end{display:none}
+  .score{font-size:34px;color:var(--blue);font-weight:700;margin:6px 0}
+  .note{margin-top:26px;font-size:12px;color:#6b7280;border-top:1px dashed #d7dee8;padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>图实不符找错 · 二次回路查线、对线</h1>
+    <p>项目1 二次回路识图与图纸管理 ｜ 1.5 二次回路查线、对线 ｜ 小游戏（约 4 分钟）</p>
+  </header>
+  <div class="bar">
+    <span class="pill">进度 <b id="p">1 / 6</b></span>
+    <span class="pill">得分 <b id="s">0</b></span>
+    <span class="pill">满分 <b>60</b></span>
+  </div>
+  <div class="card" id="stage">
+    <p class="scn"><span id="tag">情境</span><b id="title"></b></p>
+    <div class="data" id="data"></div>
+    <div id="opts"></div>
+    <div class="fb" id="fb"></div>
+    <div class="actions">
+      <button class="main" id="next" disabled>下一题 →</button>
+      <button class="ghost" id="restart">重来</button>
+    </div>
+  </div>
+  <div class="card end" id="done">
+    <p class="scn"><span>完成</span><b>本小游戏结束</b></p>
+    <div class="score" id="final">0 分</div>
+    <p id="comment" style="font-size:14.5px"></p>
+    <div class="actions"><button class="main" id="again">再练一次</button></div>
+  </div>
+  <div class="note">
+    [AI起草·待人工核定] 判据依据：DL/T 995-2016《继电保护和电网安全自动装置检验规程》、GB/T 50976-2014《继电保护及二次回路安装及验收规范》、GB/T 14285-2023、GB 26860-2011 及出版稿《二次回路设计与安装调试》相关任务。
+    本页仅作课堂练习，不作考核依据。
+  </div>
+</div>
+<script>
+var QS = [{"tag": "找错", "title": "查线前最该先做的是什么？", "data": "准备对一面运行中的保护屏查线。", "opts": ["断开出口回路、做好安措并验电", "直接拿万用表量端子", "先把所有线拆下来", "先合闸试试通不通"], "ans": 0, "right": "出口回路未断开前不得在回路上作业；查线前须验明无压。", "wrong": "带电拆接线可能造成保护误动或人身伤害。见 DL/T 995-2016 第 5.2.2.6 条、GB 26860-2011。", "src": "DL/T 995-2016 第 5.2.2.6 条；GB 26860-2011"}, {"tag": "找错", "title": "查线时哪条回路绝对不能断开？", "data": "拆线核对时遇到跳闸回路。", "opts": ["跳闸回路的完整性监视回路", "信号回路的指示灯线", "备用芯", "屏顶小母线"], "ans": 0, "right": "跳闸回路必须保持完整性监视——断开会造成控制回路断线告警，甚至失去跳闸能力。", "wrong": "断开跳闸回路监视，断路器就可能在故障时拒动。见出版稿任务1.5「跳闸回路的完整性监视与不许断开的回路」。", "src": "出版稿《二次回路设计与安装调试》1.5 二次回路查线、对线（原理/判读类，不作判据）"}, {"tag": "找错", "title": "图纸标 3 根线，现场只有 2 根，先怎么处理？", "data": "对线发现一处少一根。", "opts": ["记录不符项、按程序上报，不擅自改接线", "现场补一根让它对上", "把图纸改成 2 根", "不管，继续往下核"], "ans": 0, "right": "图实不符要登记、上报，由设计确认后改——不允许拿改接线或改图凑数据。", "wrong": "擅自改接线或改图，会把真实缺陷掩盖成「合格」，投运后爆发。见 DL/T 995-2016 第 5.5.2.8 条。", "src": "DL/T 995-2016 第 5.5.2.8 条"}, {"tag": "找错", "title": "用万用表核线时，档位应选？", "data": "核对两根线是否同一回路。", "opts": ["电阻档（通断）", "交流电压档", "直流电流档", "电容档"], "ans": 0, "right": "核通断用电阻档；在带电回路上则须先确认无压。", "wrong": "在带电回路上用电阻档，会打表甚至短路。见出版稿任务1.5「仪表选用与核对路径」。", "src": "出版稿《二次回路设计与安装调试》1.5 二次回路查线、对线（原理/判读类，不作判据）"}, {"tag": "找错", "title": "拆线时哪件事必须同步做？", "data": "逐根拆、逐根恢复。", "opts": ["逐根在拆接线记录表上做对应记录", "凭记忆记", "拍一张全景照代替记录", "拆完一起记"], "ans": 0, "right": "每拆一根就在记录表记一格——这是恢复的唯一依据。", "wrong": "凭记忆恢复必然出错，恢复不全可能导致保护拒动。见 DL/T 995-2016（拆接线恢复要求）。", "src": "DL/T 995-2016 第 5.2.2.6 条（工作许可与出口回路断开）；出版稿项目1 任务1.5（拆接线记录）"}, {"tag": "找错", "title": "查完线恢复后，还要做什么？", "data": "所有线已按记录恢复。", "opts": ["逐根复核并测绝缘，确认无遗漏", "直接封柜送电", "只目视看一下", "交给运行人员自己核"], "ans": 0, "right": "恢复后要逐根复核、必要时复测绝缘，确认无遗漏才可报完工。", "wrong": "不复核就送电，遗漏一根线就可能是拒动或误动。见 DL/T 995-2016（恢复与复查）。", "src": "DL/T 995-2016（试验结束恢复接线与复查）；GB 26860-2011 第 13.9 条"}];
+var i = 0, score = 0, locked = false;
+var $ = function(id){return document.getElementById(id)};
+function render(){
+  var q = QS[i];
+  $('p').textContent = (i+1) + ' / ' + QS.length;
+  $('s').textContent = score;
+  $('tag').textContent = q.tag;
+  $('title').textContent = q.title;
+  $('data').textContent = q.data;
+  var box = $('opts'); box.innerHTML = '';
+  q.opts.forEach(function(t, k){
+    var b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button'; b.textContent = String.fromCharCode(65+k) + '. ' + t;
+    b.onclick = function(){ pick(k, b); };
+    box.appendChild(b);
+  });
+  var fb = $('fb'); fb.className = 'fb'; fb.innerHTML = '';
+  $('next').disabled = true; locked = false;
+}
+function pick(k, btn){
+  if(locked) return; locked = true;
+  var q = QS[i];
+  var all = $('opts').querySelectorAll('.opt');
+  for(var j=0;j<all.length;j++){ all[j].disabled = true; }
+  var fb = $('fb');
+  if(k === q.ans){
+    btn.classList.add('right'); score += 10; $('s').textContent = score;
+    fb.className = 'fb ok';
+    fb.innerHTML = '<b>✔ 对了</b><br>' + q.right + '<span class="src">依据：' + q.src + '</span>';
+  } else {
+    btn.classList.add('wrong');
+    all[q.ans].classList.add('right');
+    fb.className = 'fb no';
+    fb.innerHTML = '<b>✘ 不对</b><br>' + q.wrong + '<span class="src">依据：' + q.src + '</span>';
+  }
+  $('next').disabled = false;
+}
+$('next').onclick = function(){
+  i++;
+  if(i >= QS.length){ $('stage').style.display='none'; $('done').style.display='block';
+    $('final').textContent = score + ' 分';
+    var c = score >= 60 ? '过关。判据记住了，可以上真设备。' : '没过 60。把错题的依据再看一遍，然后重来。';
+    $('comment').textContent = c; return; }
+  render();
+};
+$('restart').onclick = function(){ i=0; score=0; $('stage').style.display='block'; $('done').style.display='none'; render(); };
+$('again').onclick = function(){ i=0; score=0; $('stage').style.display='block'; $('done').style.display='none'; render(); };
+render();
+</script>
+</body>
+</html>
