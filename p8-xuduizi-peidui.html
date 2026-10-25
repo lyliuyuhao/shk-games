@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>虚端子配对 · 虚回路的配置与核对</title>
+<style>
+  :root{--blue:#0B3D91;--orange:#F5A623;--green:#2E7D32;--ink:#2B2F36;--bg:#F5F7FA;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:24px 18px 60px}
+  header{background:var(--blue);color:#fff;border-radius:8px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
+  header:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border:8px solid rgba(255,255,255,.12);border-radius:50%}
+  header h1{margin:0;font-size:22px;letter-spacing:.5px}
+  header p{margin:8px 0 0;font-size:13px;opacity:.85}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px;font-size:13px}
+  .pill{background:#fff;border:1px solid #dfe5ee;border-radius:999px;padding:4px 12px}
+  .pill b{color:var(--blue)}
+  .card{background:#fff;border-radius:8px;padding:20px 22px;box-shadow:0 1px 3px rgba(11,61,145,.08)}
+  .scn{font-size:15px;margin:0 0 6px}
+  .scn span{display:inline-block;background:var(--orange);color:#fff;font-size:12px;border-radius:4px;padding:1px 8px;margin-right:8px;vertical-align:2px}
+  .data{background:#F0F4FB;border-left:4px solid var(--blue);padding:10px 14px;margin:14px 0 18px;font-size:14px;border-radius:0 6px 6px 0}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid #dfe5ee;border-radius:8px;padding:12px 14px;margin:10px 0;font-size:14.5px;cursor:pointer;transition:.15s;font-family:inherit;color:var(--ink)}
+  .opt:hover{border-color:var(--blue);background:#F7FAFF}
+  .opt.right{border-color:var(--green);background:#EDF7EE}
+  .opt.wrong{border-color:#C62828;background:#FDECEC}
+  .opt:disabled{cursor:default}
+  .fb{display:none;margin-top:14px;font-size:14px;border-radius:6px;padding:12px 14px}
+  .fb.ok{display:block;background:#EDF7EE;border-left:4px solid var(--green)}
+  .fb.no{display:block;background:#FDECEC;border-left:4px solid #C62828}
+  .fb .src{display:block;margin-top:6px;font-size:12.5px;color:#5a6472}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button.main{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:10px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .end{display:none}
+  .score{font-size:34px;color:var(--blue);font-weight:700;margin:6px 0}
+  .note{margin-top:26px;font-size:12px;color:#6b7280;border-top:1px dashed #d7dee8;padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>虚端子配对 · 虚回路的配置与核对</h1>
+    <p>项目8 智能变电站虚回路 ｜ 8.3 虚回路的配置与核对 ｜ 小游戏（约 4 分钟）</p>
+  </header>
+  <div class="bar">
+    <span class="pill">进度 <b id="p">1 / 6</b></span>
+    <span class="pill">得分 <b id="s">0</b></span>
+    <span class="pill">满分 <b>60</b></span>
+  </div>
+  <div class="card" id="stage">
+    <p class="scn"><span id="tag">情境</span><b id="title"></b></p>
+    <div class="data" id="data"></div>
+    <div id="opts"></div>
+    <div class="fb" id="fb"></div>
+    <div class="actions">
+      <button class="main" id="next" disabled>下一题 →</button>
+      <button class="ghost" id="restart">重来</button>
+    </div>
+  </div>
+  <div class="card end" id="done">
+    <p class="scn"><span>完成</span><b>本小游戏结束</b></p>
+    <div class="score" id="final">0 分</div>
+    <p id="comment" style="font-size:14.5px"></p>
+    <div class="actions"><button class="main" id="again">再练一次</button></div>
+  </div>
+  <div class="note">
+    [AI起草·待人工核定] 判据依据：DL/T 995-2016《继电保护和电网安全自动装置检验规程》、GB/T 50976-2014《继电保护及二次回路安装及验收规范》、GB/T 14285-2023、GB 26860-2011 及出版稿《二次回路设计与安装调试》相关任务。
+    本页仅作课堂练习，不作考核依据。
+  </div>
+</div>
+<script>
+var QS = [{"tag": "文件", "title": "SCD、ICD、CID 三者的关系是？", "data": "手里有三个文件。", "opts": ["ICD 是装置能力描述，SCD 是全站配置，CID 是下装到装置的实例", "三者完全相同", "SCD 是厂家给的，CID 是设计给的", "ICD 可替代 SCD"], "ans": 0, "right": "ICD（装置能力）→ 集成成 SCD（全站）→ 导出 CID（下装实例）。", "wrong": "把 ICD 当 SCD 用，会漏掉跨装置连线。见出版稿项目8 任务8.1「SCD、ICD、CID 三者的文件关系」。", "src": "出版稿《二次回路设计与安装调试》8.3 虚回路的配置与核对（原理/判读类，不作判据）"}, {"tag": "读图", "title": "虚端子图上的箭头表示？", "data": "虚端子图上有一条带箭头的连线。", "opts": ["发布→订阅方向（谁发、谁收）", "电流流向", "光纤走向", "电压极性"], "ans": 0, "right": "虚端子图表达「发布→订阅」关系，箭头指向接收方。", "wrong": "把箭头当电流方向读，订阅关系会全搞反。见出版稿任务8.1「虚端子图上的箭头是发出去还是收进来」。", "src": "出版稿《二次回路设计与安装调试》8.3 虚回路的配置与核对（原理/判读类，不作判据）"}, {"tag": "核对", "title": "核对虚回路以什么为基准？", "data": "现场核对虚回路配置。", "opts": ["以设计单位出具的虚端子表为基准", "以装置里现有的配置为基准", "以厂家默认值为基准", "以运行人员口述为基准"], "ans": 0, "right": "设计单位虚端子表是核对基准——它才是「应该是什么」。", "wrong": "拿装置现状当基准，错的地方永远核不出来。见出版稿任务8.3「以设计单位虚端子表为核对基准的理由」。", "src": "出版稿《二次回路设计与安装调试》8.3 虚回路的配置与核对（原理/判读类，不作判据）"}, {"tag": "核对", "title": "校验码一致与版本号一致，哪个更有判定力？", "data": "核对配置文件版本。", "opts": ["校验码一致——版本号可能被改而内容已变", "版本号一致就够", "两个都不需要", "看文件大小"], "ans": 0, "right": "校验码反映内容本身，版本号只是标签，改内容不改版本号的情况常见。", "wrong": "只看版本号，可能放过已被改动的配置文件。见出版稿任务8.3。", "src": "出版稿《二次回路设计与安装调试》8.3 虚回路的配置与核对（原理/判读类，不作判据）"}, {"tag": "时点", "title": "虚回路核对应在什么时点做？", "data": "工程进入调试阶段。", "opts": ["配置完成后、投运前做，并在改动后再核", "只在投运后做", "只在设计阶段做", "做一次就够"], "ans": 0, "right": "配置完成即核、投运前必核、任何改动后重核。", "wrong": "只核一次，后续改动无人发现，投运即隐患。见出版稿任务8.3「核对这件事要在什么时点做，做几回」。", "src": "出版稿《二次回路设计与安装调试》8.3 虚回路的配置与核对（原理/判读类，不作判据）"}, {"tag": "漏点", "title": "虚回路核对最容易漏的是哪里？", "data": "准备开始核对。", "opts": ["跨间隔的联闭锁与跨装置启失灵等接口回路", "本装置内部的连线", "光纤熔接点", "屏柜接地"], "ans": 0, "right": "跨间隔/跨装置的接口回路最容易漏——它们不在单装置视角里。", "wrong": "只核本装置内部，跨间隔的联动关系就成了盲区。见出版稿任务8.3「哪几处最容易漏」。", "src": "出版稿《二次回路设计与安装调试》8.3 虚回路的配置与核对（原理/判读类，不作判据）"}];
+var i = 0, score = 0, locked = false;
+var $ = function(id){return document.getElementById(id)};
+function render(){
+  var q = QS[i];
+  $('p').textContent = (i+1) + ' / ' + QS.length;
+  $('s').textContent = score;
+  $('tag').textContent = q.tag;
+  $('title').textContent = q.title;
+  $('data').textContent = q.data;
+  var box = $('opts'); box.innerHTML = '';
+  q.opts.forEach(function(t, k){
+    var b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button'; b.textContent = String.fromCharCode(65+k) + '. ' + t;
+    b.onclick = function(){ pick(k, b); };
+    box.appendChild(b);
+  });
+  var fb = $('fb'); fb.className = 'fb'; fb.innerHTML = '';
+  $('next').disabled = true; locked = false;
+}
+function pick(k, btn){
+  if(locked) return; locked = true;
+  var q = QS[i];
+  var all = $('opts').querySelectorAll('.opt');
+  for(var j=0;j<all.length;j++){ all[j].disabled = true; }
+  var fb = $('fb');
+  if(k === q.ans){
+    btn.classList.add('right'); score += 10; $('s').textContent = score;
+    fb.className = 'fb ok';
+    fb.innerHTML = '<b>✔ 对了</b><br>' + q.right + '<span class="src">依据：' + q.src + '</span>';
+  } else {
+    btn.classList.add('wrong');
+    all[q.ans].classList.add('right');
+    fb.className = 'fb no';
+    fb.innerHTML = '<b>✘ 不对</b><br>' + q.wrong + '<span class="src">依据：' + q.src + '</span>';
+  }
+  $('next').disabled = false;
+}
+$('next').onclick = function(){
+  i++;
+  if(i >= QS.length){ $('stage').style.display='none'; $('done').style.display='block';
+    $('final').textContent = score + ' 分';
+    var c = score >= 60 ? '过关。判据记住了，可以上真设备。' : '没过 60。把错题的依据再看一遍，然后重来。';
+    $('comment').textContent = c; return; }
+  render();
+};
+$('restart').onclick = function(){ i=0; score=0; $('stage').style.display='block'; $('done').style.display='none'; render(); };
+$('again').onclick = function(){ i=0; score=0; $('stage').style.display='block'; $('done').style.display='none'; render(); };
+render();
+</script>
+</body>
+</html>
