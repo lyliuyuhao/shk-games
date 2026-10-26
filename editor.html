@@ -1123,6 +1123,34 @@ ENGINE.huakuai = {
  }
 };
 
+
+/* ── 别名对齐：TYPES 里的旧 id 与引擎 key 不一致，必须映射，否则目录卡点不亮 ── */
+var ALIAS = { match:"lianxian", finderr:"zhaocuo", faulttree:"guzhangshu", slider:"huakuai" };
+Object.keys(ALIAS).forEach(function(a){
+  var b = ALIAS[a];
+  if(ENGINE[b]) ENGINE[a] = ENGINE[b];
+  if(FIELDS[b]) FIELDS[a] = FIELDS[b];
+  if(ITEM_LABEL[b]) ITEM_LABEL[a] = ITEM_LABEL[b];
+  if(typeof PHRASE !== "undefined" && PHRASE[b]) PHRASE[a] = PHRASE[b];
+  TYPES.forEach(function(t){
+    if(t.id === a){
+      t.done = true;
+      t.need = ({
+        match:"左项／右项／配对说明",
+        finderr:"全部条目／哪几条是错的／错在哪",
+        faulttree:"每个节点：现状／2-3 个选项／各自指向哪／花多久／理由",
+        slider:"每题：判据名／量表范围／合格上下限／依据"
+      })[a];
+    }
+  });
+});
+/* 自检：可用类型数必须等于引擎数 */
+if(typeof console !== "undefined"){
+  var _ok = TYPES.filter(function(t){return t.done}).length;
+  var _eng = Object.keys(ENGINE).length;
+  if(_ok !== _eng) console.warn("[teaching-games] 可用类型 " + _ok + " ≠ 引擎 " + _eng);
+}
+
 /* ═══════════════════════════════════════════════
    七、步骤控制
    ═══════════════════════════════════════════════ */
