@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>信号回路调试 · 信号类型与后台表现连线</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>信号回路调试 · 后台对点找错</title>
 <style>
 :root{--blue:#0B3D91;--orange:#F5A623;--green:#2E7D32;--red:#C62828;--ink:#2B2F36;--bg:#F5F7FA;}
 *{box-sizing:border-box;-webkit-user-select:none;user-select:none}
@@ -34,36 +34,31 @@ header p{margin:7px 0 0;font-size:13px;opacity:.88}
 .score{font-size:38px;color:var(--blue);font-weight:700;margin:8px 0}
 .note{margin-top:24px;font-size:12px;color:#6b7280;border-top:1px dashed #d7dee8;padding-top:10px}
 
-.board{position:relative;display:flex;justify-content:space-between;gap:40px;margin:10px 0 6px}
-.col{flex:1;display:flex;flex-direction:column;gap:14px;z-index:2}
-.node{background:#fff;border:2px solid #dfe5ee;border-radius:9px;padding:12px 14px;font-size:14px;cursor:grab;transition:.18s;position:relative}
-.node:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 4px 12px rgba(11,61,145,.15)}
-.node.sel{border-color:var(--orange);background:#FFF9EE;box-shadow:0 0 0 3px rgba(245,166,35,.25)}
-.node.done{border-color:var(--green);background:#EDF7EE;cursor:default;opacity:.9}
-.node.bad{animation:shake .35s;border-color:var(--red);background:#FDECEC}
-svg.lines{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
-svg.lines path{fill:none;stroke-width:3;stroke-linecap:round}
-svg.lines path.tmp{stroke:var(--orange);stroke-dasharray:8 6;animation:dash .6s linear infinite}
-@keyframes dash{to{stroke-dashoffset:-14}}
+.scene{position:relative;background:#F7FAFE;border:2px solid #d7e2f0;border-radius:10px;padding:18px;margin-bottom:14px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 11px;border:2px solid transparent;border-radius:7px;font-size:13.5px;cursor:pointer;transition:.16s;margin-bottom:6px}
+.row:hover{background:#EEF4FF;border-color:#c3d6f5}
+.row.found{background:#FDECEC;border-color:var(--red);cursor:default}
+.row.found .tag{background:var(--red);color:#fff}
+.row.correct-glow{background:#EDF7EE;border-color:var(--green)}
+.row.miss{animation:shake .35s}
+.tag{flex:0 0 auto;font-size:11px;background:#e8eefb;color:var(--blue);border-radius:4px;padding:2px 7px;font-family:monospace}
+.txt{flex:1}
+.hit{color:var(--red);font-weight:700}
 </style></head><body><div class="wrap">
-<header><h1>信号回路调试 · 信号类型与后台表现连线</h1><p>项目5 二次回路调试 ｜ 5.6 信号回路调试 ｜ 连线配对（约 4 分钟）</p></header>
-<div class="bar"><span class="pill">进度 <b id="prog">0 / 6</b></span><span class="pill">得分 <b id="score">0</b></span><span class="pill">满分 <b>60</b></span></div>
+<header><h1>信号回路调试 · 后台对点找错</h1><p>项目5 二次回路调试 ｜ 5.6 信号回路调试 ｜ 找错点击（约 4 分钟）</p></header>
+<div class="bar"><span class="pill">找到 <b id="prog">0 / 8</b></span><span class="pill">得分 <b id="score">0</b></span><span class="pill">满分 <b>80</b></span><span class="pill">剩余 <b id="left">3</b></span></div>
 <div class="prog"><i id="progbar"></i></div>
 <div class="card">
-  <p class="hint">玩法：点左边一项，再点右边与它对应的一项，就会连上一条线。连错线会抖一下并扣分。</p>
-  <div class="board">
-    <svg class="lines" id="svg"></svg>
-    <div class="col" id="left"></div>
-    <div class="col" id="right"></div>
-  </div>
+  <p class="hint" id="hintText">玩法：下面这份图面里藏着 8 处错误，用鼠标点出来。点错了会扣分。</p>
+  <div class="scene" id="scene"></div>
   <div class="pop" id="pop"></div>
-  <div class="actions" style="margin-top:16px"><button class="btn ghost" id="restart">重来</button></div>
+  <div style="margin-top:14px"><button class="btn ghost" id="restart">重来</button></div>
 </div>
 <div class="card end" id="done"><div class="center"><div class="score" id="final">0</div><p id="comment"></p><button class="btn" id="again" style="margin-top:10px">再练一次</button></div></div>
-<div class="note">[AI起草·待人工核定] 判据依据：出版稿《二次回路设计与安装调试》任务 5.5（信号回路调试）；DL/T 1879-2018；DL/T 5136-2012。本页仅作课堂练习，不作考核依据。</div>
+<div class="note">[AI起草·待人工核定] 判据依据：出版稿《二次回路设计与安装调试》任务 5.5（信号回路调试）；DL/T 1879-2018 第 8.5.1.5/8.5.1.9 条 b) 款；DL/T 5136-2012 第 5.2.1 条；DL/T 995-2016。本页作课堂练习，不作考核依据。</div>
 </div><script>
-var PAIRS=[{"l": "事故信号", "r": "一次系统事故引起断路器跳闸时发出的声、光信号", "why": "事故信号的判据是瞬时音响、来源明确。", "src": "出版稿任务5.5「信号回路的设计判据」"}, {"l": "预告信号", "r": "设备出现不正常运行状态时发出的声、光信号", "why": "预告信号分瞬时与延时两类。", "src": "出版稿任务5.5"}, {"l": "位置信号", "r": "表示断路器、隔离开关等开关设备状态的信号", "why": "红灯亮表示合闸状态，同时表明跳闸回路完好。", "src": "出版稿任务5.5"}, {"l": "遥信变位正确", "r": "状态与输入一致、变位后着色、闪烁", "why": "监控主机显示的遥信状态与输入状态一致，且变位后正确启动告警、状态变位着色、闪烁。", "src": "DL/T 1879-2018 第 8.5.1.5 条 b) 款"}, {"l": "远方复归合格", "r": "后台光字与装置告警两头都要掉", "why": "监控主机光字牌或告警信号与装置告警信号均应复归。", "src": "DL/T 1879-2018 第 8.5.1.9 条 b) 款"}, {"l": "重要信号", "r": "应通过硬接线方式实现", "why": "通信方式应保证实时性与可靠性，但重要信号必须硬接线。", "src": "DL/T 5136-2012 第 5.2.1 条"}];
-var LVL=10, cur=0, score=0, selLeft=null, matched={};
+var ROWS=[{"tag": "X-01", "text": "按对点检测表逐条核对，每个信号点与设计图一一对应", "bad": false, "wrong": "这条是对的。对点表的作用就是查漏。"}, {"tag": "X-02", "text": "遥信变位后在后台只要求数值变化，不要求着色与闪烁", "bad": true, "why": "监控主机显示的遥信状态应与输入状态一致，且变位后正确启动告警、状态变位着色、闪烁。", "src": "DL/T 1879-2018 第 8.5.1.5 条 b) 款"}, {"tag": "X-03", "text": "远方复归后只看后台光字是否复归，装置侧告警可不管", "bad": true, "why": "监控主机上相应的光字牌或告警信号应复归，装置上相应的告警信号也应复归——两头都得掉。", "src": "DL/T 1879-2018 第 8.5.1.9 条 b) 款"}, {"tag": "X-04", "text": "软报文采用逐个单独发出的方式，核对时标与内容", "bad": false, "wrong": "这条是对的。逐条发才能发现丢报文或时标不对。"}, {"tag": "X-05", "text": "重要信号只用通信软报文上传，不做硬接线", "bad": true, "why": "重要的信号应通过硬接线方式实现。硬接点与软报文是两条物理独立的路，一条通了不证明另一条也通。", "src": "DL/T 5136-2012 第 5.2.1 条"}, {"tag": "X-06", "text": "保护装置发出的信号既有软报文，也有硬接点经测控屏转数字信号上传", "bad": false, "wrong": "这条是对的，两条路都要验。"}, {"tag": "X-07", "text": "只在监控后台一处核对信号，不到测控装置与机构箱汇控箱核对", "bad": true, "why": "三处（监控后台、测控装置、机构箱汇控箱）应同时核对，只看一处容易漏判。", "src": "出版稿任务5.5「三处同时核对」"}, {"tag": "X-08", "text": "试验记录只记合格项，不记不合格项与遗留问题", "bad": true, "why": "清点试验记录应无漏试项目，试验数据、结论应完整、正确。只记合格项等于掩盖问题。", "src": "GB/T 50976-2014 第 8.1.3 条"}];   // [{tag:"A411", text:"...", bad:true, why:"", src:"", wrong:"这里是对的"}]
+var LVL=10, found=0, score=0, lives=3, total=0;
 
 function $(s){return document.querySelector(s)}
 function $$(s){return [...document.querySelectorAll(s)]}
@@ -87,71 +82,53 @@ function showPop(ok,html,src){
   p.innerHTML='<b>'+(ok?'✔ 对了':'✘ 不对')+'</b><br>'+html+(src?'<span class="src">依据：'+src+'</span>':'');
 }
 
-function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
-function nodeEl(txt,side,idx){
-  var d=document.createElement('div'); d.className='node'; d.textContent=txt;
-  d.dataset.side=side; d.dataset.idx=idx;
-  d.addEventListener('click',function(){ pick(d,side,idx); });
-  return d;
-}
 function render(){
-  var L=$('#left'), R=$('#right'); L.innerHTML=''; R.innerHTML='';
-  matched={}; selLeft=null; cur=0; score=0; setScore(0); setProg(0); $('#done').style.display='none';
-  $('.card').style.display='block';
-  var lf=PAIRS.map(function(p,i){return i;});
-  var rt=shuffle(PAIRS.map(function(p,i){return i;}));
-  lf.forEach(function(i){ L.appendChild(nodeEl(PAIRS[i].l,'L',i)); });
-  rt.forEach(function(i){ R.appendChild(nodeEl(PAIRS[i].r,'R',i)); });
-  $('#prog').textContent='0 / '+PAIRS.length;
-  $('#svg').innerHTML='';
+  var S=$('#scene'); S.innerHTML='';
+  found=0; score=0; lives=3; setScore(0); setProg(0);
+  total=ROWS.filter(function(r){return r.bad;}).length;
+  $('#done').style.display='none'; $('.card').style.display='block';
+  $('#hintText').textContent='玩法：下面这份图面里藏着 '+total+' 处错误，用鼠标点出来。点错了会扣分。';
+  $('#left').textContent=lives;
+  var sh=shuffle(ROWS.map(function(r,i){return i;}));
+  sh.forEach(function(i){
+    var r=ROWS[i];
+    var d=document.createElement('div'); d.className='row';
+    d.innerHTML='<span class="tag">'+(r.tag||'')+'</span><span class="txt">'+r.text+'</span>';
+    d.dataset.idx=i;
+    d.addEventListener('click',function(){ tap(d, i); });
+    S.appendChild(d);
+  });
+  $('#prog').textContent='0 / '+total;
 }
-function pick(el,side,idx){
-  if(el.classList.contains('done')) return;
-  if(side==='L'){
-    $$('.node.sel').forEach(function(n){n.classList.remove('sel');});
-    el.classList.add('sel'); selLeft={el:el,idx:idx};
-    return;
-  }
-  if(!selLeft){ showPop(false,'先点左边一项，再点右边。'); return; }
-  var l=selLeft, r={el:el,idx:idx};
-  if(l.idx===r.idx){
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function tap(el, i){
+  if(el.classList.contains('found')) return;
+  var r=ROWS[i];
+  if(r.bad){
     beep(true);
-    l.el.classList.add('done'); l.el.classList.remove('sel'); r.el.classList.add('done');
-    l.el.classList.add('glow'); r.el.classList.add('glow');
-    drawLine(l.el,r.el,true);
-    matched[l.idx]=1; cur++; score+=LVL; setScore(score);
-    $('#prog').textContent=cur+' / '+PAIRS.length;
-    setProg(100*cur/PAIRS.length);
-    showPop(true,PAIRS[l.idx].why||'配对正确。',PAIRS[l.idx].src||'');
-    selLeft=null;
-    if(cur===PAIRS.length) finish();
+    el.classList.add('found');
+    el.querySelector('.txt').innerHTML='<span class="hit">✘ '+r.text+'</span>';
+    found++; score+=LVL; setScore(score); setProg(100*found/total);
+    $('#prog').textContent=found+' / '+total;
+    showPop(true,'找对了。'+r.why,r.src);
+    if(found===total) setTimeout(finish,700);
   } else {
     beep(false);
-    el.classList.add('bad'); l.el.classList.add('bad');
-    setTimeout(function(){ el.classList.remove('bad'); l.el.classList.remove('bad'); },400);
-    drawLine(l.el,el,false);
-    setTimeout(function(){ var p=$('#svg path.tmp'); if(p)p.remove(); },600);
-    showPop(false,(PAIRS[r.idx].wrong||'这一对不成立。')+(PAIRS[r.idx].why?('<br>'+PAIRS[r.idx].why):''),PAIRS[r.idx].src||'');
-    selLeft=null;
-    $$('.node.sel').forEach(function(n){n.classList.remove('sel');});
+    lives--; $('#left').textContent=lives;
+    el.classList.add('miss');
+    setTimeout(function(){ el.classList.remove('miss'); },400);
+    showPop(false,'这里没问题。'+(r.wrong||''),r.src||'');
+    if(lives<=0){
+      $$('.row').forEach(function(x){ if(ROWS[parseInt(x.dataset.idx,10)].bad) x.classList.add('correct-glow'); });
+      showPop(false,'机会用完了。红色高亮的就是该点出来的错误。','');
+      setTimeout(finish,1400);
+    }
   }
 }
-function drawLine(a,b,keep){
-  var svg=$('#svg'), ab=a.getBoundingClientRect(), bb=b.getBoundingClientRect(), sb=svg.getBoundingClientRect();
-  var x1=ab.right-sb.left, y1=ab.top-sb.top+ab.height/2;
-  var x2=bb.left-sb.left, y2=bb.top-sb.top+bb.height/2;
-  var p=document.createElementNS('http://www.w3.org/2000/svg','path');
-  p.setAttribute('d','M'+x1+','+y1+' C'+(x1+40)+','+y1+' '+(x2-40)+','+y2+' '+x2+','+y2);
-  p.setAttribute('stroke', keep?'#2E7D32':'#C62828');
-  if(!keep) p.classList.add('tmp');
-  svg.appendChild(p);
-}
 function finish(){
-  setTimeout(function(){
-    $('.card').style.display='none'; $('#done').style.display='block';
-    $('#final').textContent=score+' 分';
-    $('#comment').textContent = score>=36 ? '过关。配对关系记住了，可以上真设备。' : '没过 36 分。把错的那几对再想一遍，然后重来。';
-  },620);
+  $('.card').style.display='none'; $('#done').style.display='block';
+  $('#final').textContent=score+' 分';
+  $('#comment').textContent = (found===total)?'全找出来了。这双眼睛可以上现场了。':'还差 '+(total-found)+' 处没找到。看看高亮的都是什么问题。';
 }
 $('#restart').onclick=render; $('#again').onclick=render;
 render();
