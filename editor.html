@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教学游戏配置器 · 《电力系统二次回路》</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#0a1626;color:#e8eefb;min-height:100vh}
+.top{background:linear-gradient(92deg,#123,#1b3355);padding:14px 18px;display:flex;align-items:center;
+  gap:14px;flex-wrap:wrap;border-bottom:1px solid rgba(120,170,255,.22);position:sticky;top:0;z-index:30}
+.top h1{font-size:17px;letter-spacing:.6px}
+.top .sp{flex:1}
+.btn{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:9px;cursor:pointer;
+  border:1.5px solid rgba(140,180,255,.4);background:rgba(255,255,255,.08);color:#dce8fb;transition:.15s}
+.btn:hover{background:rgba(127,182,255,.22);border-color:#7fb6ff}
+.btn.pri{background:linear-gradient(160deg,#2f6fd0,#1d4f9e);border-color:#5b9cf5;font-weight:700}
+.btn.ok{background:linear-gradient(160deg,#2f8d5a,#1d6b40);border-color:#7dffb0;font-weight:700}
+.layout{display:grid;grid-template-columns:400px 1fr;gap:0;min-height:calc(100vh - 60px)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.pane{padding:16px;overflow-y:auto;max-height:calc(100vh - 60px)}
+.pane.left{background:#0d1c30;border-right:1px solid rgba(120,170,255,.16)}
+.pane.right{background:#0a1626}
+h3{font-size:13px;color:#8fb4e6;margin:16px 0 8px;padding-left:9px;border-left:3px solid #ffd479;letter-spacing:.5px}
+h3:first-child{margin-top:0}
+label{display:block;font-size:12px;color:#9db6d8;margin:9px 0 5px}
+input[type=text],input[type=number],textarea,select{width:100%;font-family:inherit;font-size:13px;
+  padding:8px 10px;border-radius:8px;border:1px solid rgba(140,180,255,.28);background:#12233c;color:#e8eefb}
+textarea{min-height:58px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#7fb6ff;box-shadow:0 0 0 3px rgba(127,182,255,.16)}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.item{background:#12233c;border:1px solid rgba(140,180,255,.2);border-radius:10px;padding:11px;margin-bottom:9px}
+.item .hd{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.item .hd b{font-size:12px;color:#ffd479}
+.item .hd .del{margin-left:auto;color:#ff8b8b;cursor:pointer;font-size:12px}
+.drop{border:2px dashed rgba(140,180,255,.35);border-radius:10px;padding:18px;text-align:center;
+  font-size:12.5px;color:#8fb4e6;cursor:pointer;transition:.15s;background:#0f1e33}
+.drop:hover{border-color:#7fb6ff;background:#132843}
+.drop.has{border-style:solid;border-color:#7dffb0;padding:0;overflow:hidden}
+.drop img{width:100%;display:block}
+.tip{font-size:11.5px;color:#7d94b5;line-height:1.7;margin-top:6px}
+#stage{background:#0f1e33;border-radius:12px;border:1px solid rgba(120,170,255,.2);padding:12px;min-height:420px}
+#canvasWrap{position:relative;display:inline-block;max-width:100%}
+#canvasWrap img{max-width:100%;display:block;border-radius:10px}
+.spot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  background:rgba(255,212,121,.9);border:2.5px solid #fff;cursor:pointer;z-index:5;
+  box-shadow:0 0 0 4px rgba(255,212,121,.28);transition:.15s;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#4a3400}
+.spot:hover{transform:scale(1.18)}
+.spot.found{background:#7dffb0;box-shadow:0 0 0 5px rgba(125,255,176,.4)}
+.spot .lab{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;
+  background:rgba(8,20,38,.94);color:#e8eefb;font-size:11px;padding:2px 8px;border-radius:5px;white-space:nowrap;
+  border:1px solid rgba(140,180,255,.35)}
+.bubble{position:relative;background:#fff;color:#1a2b45;border-radius:12px;padding:10px 14px;
+  font-size:12.5px;line-height:1.6;max-width:330px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.bubble:after{content:"";position:absolute;left:-8px;top:20px;border:8px solid transparent;border-right-color:#fff}
+.mascotRow{display:flex;align-items:flex-start;gap:12px;margin:10px 0}
+.hud2{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px}
+.hud2 span{background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px}
+.hud2 b{color:#ffd479}
+#toast2{position:fixed;left:50%;top:14%;transform:translateX(-50%) scale(.85);opacity:0;z-index:200;
+  font-size:20px;font-weight:800;padding:10px 22px;border-radius:12px;pointer-events:none}
+#toast2.show{animation:t2 1.2s}
+@keyframes t2{0%{opacity:0;transform:translateX(-50%) scale(.7)}
+  22%{opacity:1;transform:translateX(-50%) scale(1.06)}70%{opacity:1;transform:translateX(-50%) scale(1)}
+  100%{opacity:0;transform:translateX(-50%) scale(1.2)}}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🛠 教学游戏配置器</h1>
+  <span style="font-size:12px;color:#8fb4e6">《电力系统二次回路》</span>
+  <span class="sp"></span>
+  <button class="btn" id="btnPrev">▶ 预览</button>
+  <button class="btn" id="btnJson">💾 存配置</button>
+  <button class="btn" id="btnLoad">📂 载配置</button>
+  <button class="btn ok" id="btnExport">⬇ 导出游戏 HTML</button>
+</div>
+
+<div class="layout">
+  <!-- ══════ 左：配置区 ══════ -->
+  <div class="pane left" id="editorPane">
+    <h3>1. 选玩法</h3>
+    <select id="mode">
+      <option value="hotspots">设备认知 · 图上打点讲解（图文并茂）</option>
+      <option value="findspot">图上找位置 · 点出指定设备</option>
+    </select>
+    <div class="tip" id="modeTip">在设备照片/图纸上打点，学生点开看这个部件是什么、判据是什么。适合「设备认知」「屏柜认件」。</div>
+
+    <h3>2. 基本信息</h3>
+    <label>游戏标题</label>
+    <input type="text" id="gTitle" placeholder="例：110kV 出线间隔设备认知">
+    <label>所属项目 / 任务</label>
+    <div class="row">
+      <input type="text" id="gProj" placeholder="项目2 互感器选型">
+      <input type="text" id="gTask" placeholder="2.2 读铭牌与确定变比">
+    </div>
+    <label>判据依据（出版稿与标准，可留空）</label>
+    <input type="text" id="gSrc" placeholder="出版稿任务 2.2；DL/T 995-2016">
+
+    <h3>3. 背景图（老师上传）</h3>
+    <div class="drop" id="drop">点这里选图片，或把图片拖进来<br><span style="font-size:11px;color:#6b82a6">支持 jpg / png，建议宽 1200px 以上</span></div>
+    <input type="file" id="file" accept="image/*" class="hide">
+    <div class="tip">图片会转成 base64 内嵌进 HTML，导出的单文件不依赖任何外部文件。</div>
+
+    <h3>4. 打点位（<span id="cnt">0</span> 个）</h3>
+    <div class="tip">在右侧预览图上点一下，就新增一个点位；然后填名称和说明。</div>
+    <div id="items"></div>
+    <button class="btn" id="btnAdd" style="width:100%">＋ 也可直接加一个点位</button>
+  </div>
+
+  <!-- ══════ 右：预览区 ══════ -->
+  <div class="pane right">
+    <div class="hud2">
+      <span>模式 <b id="hMode">设备认知</b></span>
+      <span>点位 <b id="hSpots">0</b></span>
+      <span>找到 <b id="hFound">0</b></span>
+    </div>
+    <div id="stage">
+      <div class="mascotRow">
+        <div id="mascot"></div>
+        <div class="bubble" id="bubble">先上传一张设备照片，再在图上点几处要讲的地方。点一下右边这张图试试。</div>
+      </div>
+      <div id="canvasWrap"><div style="padding:60px 20px;text-align:center;color:#6b82a6;font-size:13px">（还没有背景图）</div></div>
+    </div>
+    <div class="tip" style="margin-top:12px">学生视角就是这个样子：点黄点 → 弹出这个部件的名称与判据；找位置模式则要学生自己点对位置。</div>
+  </div>
+</div>
+
+<div id="toast2"></div>
+
+<script>
+/* ══════════ 动漫形象：内联 SVG 小学徒 ══════════ */
+var MASCOT = {
+  normal: '<svg width="86" height="96" viewBox="0 0 86 96">' +
+    '<ellipse cx="43" cy="90" rx="24" ry="4" fill="rgba(0,0,0,.35)"/>' +
+    '<rect x="24" y="52" width="38" height="34" rx="9" fill="#2f6fd0"/>' +
+    '<rect x="24" y="52" width="38" height="34" rx="9" fill="none" stroke="#1d4f9e" stroke-width="2"/>' +
+    '<rect x="37" y="52" width="12" height="34" fill="#ffd479" opacity=".9"/>' +
+    '<circle cx="43" cy="34" r="21" fill="#ffd9a8"/>' +
+    '<path d="M22 30 q21 -20 42 0 q-6 -9 -21 -9 q-15 0 -21 9z" fill="#1b3355"/>' +
+    '<path d="M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z" fill="#ffd479"/>' +
+    '<rect x="18" y="24" width="50" height="5" rx="2.5" fill="#f5a623"/>' +
+    '<circle cx="35" cy="34" r="3.1" fill="#22304a"/><circle cx="51" cy="34" r="3.1" fill="#22304a"/>' +
+    '<circle cx="36" cy="33" r="1.1" fill="#fff"/><circle cx="52" cy="33" r="1.1" fill="#fff"/>' +
+    '<path d="M37 43 q6 5 12 0" stroke="#22304a" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="27" cy="41" r="3.6" fill="#ffb3a0" opacity=".65"/><circle cx="59" cy="41" r="3.6" fill="#ffb3a0" opacity=".65"/>' +
+    '</svg>',
+  happy: '<svg width="86" height="96" viewBox="0 0 86 96">' +
+    '<ellipse cx="43" cy="90" rx="24" ry="4" fill="rgba(0,0,0,.35)"/>' +
+    '<rect x="24" y="52" width="38" height="34" rx="9" fill="#2f8d5a"/>' +
+    '<rect x="37" y="52" width="12" height="34" fill="#ffd479" opacity=".9"/>' +
+    '<circle cx="43" cy="34" r="21" fill="#ffd9a8"/>' +
+    '<path d="M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z" fill="#ffd479"/>' +
+    '<rect x="18" y="24" width="50" height="5" rx="2.5" fill="#f5a623"/>' +
+    '<path d="M31 33 q4 -5 8 0" stroke="#22304a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<path d="M47 33 q4 -5 8 0" stroke="#22304a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<path d="M34 41 q9 9 18 0" stroke="#22304a" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="26" cy="40" r="4" fill="#ffb3a0" opacity=".75"/><circle cx="60" cy="40" r="4" fill="#ffb3a0" opacity=".75"/>' +
+    '<text x="72" y="24" font-size="17">👍</text></svg>',
+  think: '<svg width="86" height="96" viewBox="0 0 86 96">' +
+    '<ellipse cx="43" cy="90" rx="24" ry="4" fill="rgba(0,0,0,.35)"/>' +
+    '<rect x="24" y="52" width="38" height="34" rx="9" fill="#8a6d2f"/>' +
+    '<rect x="37" y="52" width="12" height="34" fill="#ffd479" opacity=".9"/>' +
+    '<circle cx="43" cy="34" r="21" fill="#ffd9a8"/>' +
+    '<path d="M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z" fill="#ffd479"/>' +
+    '<rect x="18" y="24" width="50" height="5" rx="2.5" fill="#f5a623"/>' +
+    '<circle cx="35" cy="33" r="3.2" fill="#22304a"/><circle cx="51" cy="33" r="3.2" fill="#22304a"/>' +
+    '<path d="M38 45 h10" stroke="#22304a" stroke-width="2.4" stroke-linecap="round"/>' +
+    '<text x="66" y="20" font-size="16">❓</text></svg>',
+  sad: '<svg width="86" height="96" viewBox="0 0 86 96">' +
+    '<ellipse cx="43" cy="90" rx="24" ry="4" fill="rgba(0,0,0,.35)"/>' +
+    '<rect x="24" y="52" width="38" height="34" rx="9" fill="#8a3040"/>' +
+    '<rect x="37" y="52" width="12" height="34" fill="#ffd479" opacity=".9"/>' +
+    '<circle cx="43" cy="34" r="21" fill="#ffd9a8"/>' +
+    '<path d="M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z" fill="#ffd479"/>' +
+    '<rect x="18" y="24" width="50" height="5" rx="2.5" fill="#f5a623"/>' +
+    '<path d="M31 32 q4 4 8 0" stroke="#22304a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<path d="M47 32 q4 4 8 0" stroke="#22304a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<path d="M36 46 q7 -6 14 0" stroke="#22304a" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<text x="68" y="22" font-size="15">💦</text></svg>'
+};
+function setMascot(kind, text) {
+  document.getElementById("mascot").innerHTML = MASCOT[kind] || MASCOT.normal;
+  document.getElementById("bubble").textContent = text;
+}
+function say(kind, text) { setMascot(kind, text); }
+
+/* ══════════ 状态 ══════════ */
+var CFG = { mode: "hotspots", title: "", proj: "", task: "", src: "", img: "", spots: [] };
+
+/* ══════════ 配置区渲染 ══════════ */
+function el(id) { return document.getElementById(id); }
+
+function renderItems() {
+  var box = el("items"); box.innerHTML = "";
+  el("cnt").textContent = CFG.spots.length;
+  el("hSpots").textContent = CFG.spots.length;
+  CFG.spots.forEach(function (s, i) {
+    var d = document.createElement("div"); d.className = "item";
+    d.innerHTML =
+      '<div class="hd"><b>点位 ' + (i + 1) + '</b>' +
+      '<span style="font-size:11px;color:#6b82a6">x ' + Math.round(s.x) + '% / y ' + Math.round(s.y) + '%</span>' +
+      '<span class="del" data-i="' + i + '">删除</span></div>' +
+      '<label>名称（短，显示在点上）</label><input type="text" data-f="name" data-i="' + i + '" value="' + esc(s.name || "") + '" placeholder="例：电流互感器">' +
+      '<label>说明（点开看的话）</label><textarea data-f="text" data-i="' + i + '" placeholder="例：LB6-110，400/5A，5P30/0.2S，额定容量 30VA">' + esc(s.text || "") + '</textarea>';
+    box.appendChild(d);
+  });
+  box.querySelectorAll("input,textarea").forEach(function (inp) {
+    inp.addEventListener("input", function () {
+      CFG.spots[+inp.dataset.i][inp.dataset.f] = inp.value;
+      drawStage();
+    });
+  });
+  box.querySelectorAll(".del").forEach(function (b) {
+    b.addEventListener("click", function () {
+      CFG.spots.splice(+b.dataset.i, 1); renderItems(); drawStage();
+    });
+  });
+}
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+
+/* ══════════ 预览舞台 ══════════ */
+function drawStage() {
+  el("hMode").textContent = CFG.mode === "hotspots" ? "设备认知" : "图上找位置";
+  var wrap = el("canvasWrap");
+  if (!CFG.img) {
+    wrap.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#6b82a6;font-size:13px">（还没有背景图）</div>';
+    el("hFound").textContent = "0";
+    return;
+  }
+  var html = '<img src="' + CFG.img + '" id="bgimg">';
+  CFG.spots.forEach(function (s, i) {
+    var found = s._found && CFG.mode === "findspot";
+    html += '<div class="spot' + (found ? " found" : "") + '" data-i="' + i + '" style="left:' + s.x + '%;top:' + s.y + '%">' + (i + 1) +
+      '<span class="lab">' + esc(s.name || "未命名") + '</span></div>';
+  });
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll(".spot").forEach(function (sp) {
+    sp.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var s = CFG.spots[+sp.dataset.i];
+      if (CFG.mode === "hotspots") {
+        say("happy", "【" + (s.name || "未命名") + "】" + (s.text || "（还没写说明）"));
+        beep("ok");
+        var r = sp.getBoundingClientRect(), p = el("stage").getBoundingClientRect();
+        fxBurst(r.x + r.width / 2, r.y + r.height / 2);
+      } else {
+        s._found = true; sp.classList.add("found");
+        say("happy", "找对了！这是 " + (s.name || "") + "。");
+        beep("ok");
+        var n = CFG.spots.filter(function (x) { return x._found; }).length;
+        el("hFound").textContent = n + "/" + CFG.spots.length;
+        if (n === CFG.spots.length) setTimeout(function () { say("happy", "全部找出来了！这双眼睛可以上现场了。"); fxRain(); }, 420);
+      }
+    });
+  });
+
+  // 编辑态：点图空白处加点
+  if (CFG.mode === "hotspots" || CFG.mode === "findspot") {
+    wrap.addEventListener("click", function (e) {
+      if (e.target.closest(".spot")) return;
+      var img = el("bgimg"); if (!img) return;
+      var r = img.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width * 100, y = (e.clientY - r.top) / r.height * 100;
+      if (x < 0 || x > 100 || y < 0 || y > 100) return;
+      CFG.spots.push({ x: +x.toFixed(1), y: +y.toFixed(1), name: "点位" + (CFG.spots.length + 1), text: "" });
+      renderItems(); drawStage();
+      say("normal", "加了第 " + CFG.spots.length + " 个点位，在左边填名称和说明。");
+      beep("click");
+    }, true);
+  }
+}
+
+/* ══════════ 音效 + 粒子（自写） ══════════ */
+function beep(kind) {
+  try {
+    var C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    window.__AC = window.__AC || new C(); var ac = window.__AC;
+    var cfg = { click: [600, "sine", .05], ok: [880, "sine", .07], bad: [160, "square", .1] }[kind] || [600, "sine", .05];
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination); o.type = cfg[1]; o.frequency.value = cfg[0];
+    g.gain.setValueAtTime(.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(cfg[2], ac.currentTime + .012);
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + .26);
+    o.start(); o.stop(ac.currentTime + .3);
+  } catch (e) { }
+}
+var FXS = [], fxc = null, fxraf = null;
+function fxInit() {
+  if (fxc) return;
+  fxc = document.createElement("canvas");
+  fxc.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:150";
+  document.body.appendChild(fxc);
+  function rs() { fxc.width = innerWidth; fxc.height = innerHeight; }
+  rs(); addEventListener("resize", rs);
+}
+function fxBurst(x, y, n) {
+  fxInit(); n = n || 22;
+  for (var i = 0; i < n; i++) {
+    var a = Math.random() * 6.283, sp = 2 + Math.random() * 6;
+    FXS.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2, life: 1, dec: .014 + Math.random() * .016,
+      c: ["#ffd479", "#8ec2ff", "#7dffb0", "#ff9e7d"][(Math.random() * 4) | 0], r: 2 + Math.random() * 3 });
+  }
+  if (!fxraf) fxLoop();
+}
+function fxRain(n) {
+  fxInit();
+  for (var i = 0; i < (n || 90); i++) {
+    FXS.push({ x: Math.random() * innerWidth, y: -20 - Math.random() * 120, vx: (Math.random() - .5) * 3,
+      vy: 2 + Math.random() * 4, life: 1, dec: .006 + Math.random() * .008,
+      c: ["#ffd479", "#8ec2ff", "#7dffb0", "#ff9e7d", "#fff"][(Math.random() * 5) | 0], r: 2 + Math.random() * 3 });
+  }
+  if (!fxraf) fxLoop();
+}
+function fxLoop() {
+  fxraf = requestAnimationFrame(fxLoop);
+  var ctx = fxc.getContext("2d");
+  ctx.clearRect(0, 0, fxc.width, fxc.height);
+  for (var i = FXS.length - 1; i >= 0; i--) {
+    var p = FXS[i];
+    p.vy += .16; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.life -= p.dec;
+    if (p.life <= 0) { FXS.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c;
+    ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+  }
+  ctx.globalAlpha = 1;
+  if (!FXS.length) { cancelAnimationFrame(fxraf); fxraf = null; ctx.clearRect(0, 0, fxc.width, fxc.height); }
+}
+
+/* ══════════ 图片上传（转 base64） ══════════ */
+var drop = el("drop"), file = el("file");
+drop.addEventListener("click", function () { file.click(); });
+drop.addEventListener("dragover", function (e) { e.preventDefault(); drop.style.borderColor = "#7fb6ff"; });
+drop.addEventListener("dragleave", function () { drop.style.borderColor = ""; });
+drop.addEventListener("drop", function (e) { e.preventDefault(); drop.style.borderColor = ""; if (e.dataTransfer.files[0]) readImg(e.dataTransfer.files[0]); });
+file.addEventListener("change", function () { if (file.files[0]) readImg(file.files[0]); });
+function readImg(f) {
+  if (!/^image\//.test(f.type)) { say("sad", "这个不是图片文件。"); return; }
+  var rd = new FileReader();
+  rd.onload = function () {
+    CFG.img = rd.result;
+    drop.className = "drop has";
+    drop.innerHTML = '<img src="' + CFG.img + '">';
+    drawStage();
+    say("happy", "图片载入了。现在在右边图上点几处要讲的地方。");
+  };
+  rd.readAsDataURL(f);
+}
+
+/* ══════════ 按钮 ══════════ */
+el("mode").addEventListener("change", function () {
+  CFG.mode = this.value;
+  el("modeTip").textContent = CFG.mode === "hotspots"
+    ? "在设备照片/图纸上打点，学生点开看这个部件是什么、判据是什么。适合「设备认知」「屏柜认件」。"
+    : "给一个目标设备名，学生在图上点出它的位置。适合「识读端子排图」「认屏柜设备」。";
+  CFG.spots.forEach(function (s) { s._found = false; });
+  drawStage(); renderItems();
+});
+el("btnAdd").addEventListener("click", function () {
+  CFG.spots.push({ x: 50, y: 50, name: "点位" + (CFG.spots.length + 1), text: "" });
+  renderItems(); drawStage();
+});
+el("btnPrev").addEventListener("click", function () {
+  CFG.spots.forEach(function (s) { s._found = false; });
+  drawStage();
+  say("normal", CFG.mode === "hotspots" ? "点图上的黄点，看这个部件是什么。" : "在图上点出你认为是目标设备的位置。");
+});
+el("btnJson").addEventListener("click", function () {
+  download((CFG.title || "游戏配置") + ".json", JSON.stringify(CFG, null, 1), "application/json");
+  say("happy", "配置已存到你电脑。下次点「载配置」选这个文件就能接着改。");
+});
+el("btnLoad").addEventListener("click", function () {
+  var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,application/json";
+  inp.onchange = function () {
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var o = JSON.parse(rd.result);
+        CFG = Object.assign({ mode: "hotspots", spots: [], img: "" }, o);
+        el("mode").value = CFG.mode;
+        el("gTitle").value = CFG.title || ""; el("gProj").value = CFG.proj || "";
+        el("gTask").value = CFG.task || ""; el("gSrc").value = CFG.src || "";
+        if (CFG.img) { drop.className = "drop has"; drop.innerHTML = '<img src="' + CFG.img + '">'; }
+        renderItems(); drawStage();
+        say("happy", "配置载入了，可以接着改。");
+      } catch (e) { say("sad", "这个文件读不了，可能不是配置 JSON。"); }
+    };
+    rd.readAsText(inp.files[0]);
+  };
+  inp.click();
+});
+el("btnExport").addEventListener("click", function () {
+  if (!CFG.img) { say("sad", "还没有背景图，先上传一张。"); return; }
+  if (!CFG.spots.length) { say("sad", "还没有点位，先在图上有几处。"); return; }
+  if (!CFG.title) { say("sad", "请先填游戏标题。"); return; }
+  var out = buildStandalone(CFG);
+  download((CFG.title || "game") + ".html", out, "text/html");
+  say("happy", "导出成功！把下载的 HTML 发给我，我推到线上并挂到平台。");
+});
+["gTitle", "gProj", "gTask", "gSrc"].forEach(function (id) {
+  el(id).addEventListener("input", function () { CFG[id.replace("g", "").toLowerCase()] = this.value; });
+});
+
+function download(name, content, type) {
+  var b = new Blob([content], { type: type + ";charset=utf-8" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(b); a.download = name; a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+}
+
+/* ══════════ 导出：生成自包含 HTML ══════════ */
+function buildStandalone(cfg) {
+  var data = JSON.stringify(cfg).replace(/</g, "\\u003c");
+  return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>' + esc(cfg.title) + '</title><style>' + PLAYER_CSS + '</style></head><body>' +
+    '<div id="app"></div><div id="toast2"></div>' +
+    '<script>window.__CFG__=' + data + ';' + MASCOT_JS + PLAYER_JS + '<\/script></body></html>';
+}
+var PLAYER_CSS = document.querySelector("style").textContent;
+var MASCOT_JS = "var MASCOT=" + JSON.stringify(MASCOT) + ";" + setMascot.toString() + say.toString();
+var PLAYER_JS = playerJS();
+
+function playerJS() {
+  return '(' + function () {
+    var C = window.__CFG__, $ = function (s) { return document.querySelector(s); };
+    var found = 0, sel = null, TOTAL = C.spots.length;
+    document.title = C.title;
+    var app = document.getElementById("app");
+    app.innerHTML =
+      '<div style="max-width:920px;margin:0 auto;padding:18px 14px 50px">' +
+      '<div style="text-align:center;margin-bottom:12px">' +
+      '<h1 style="font-size:20px;background:linear-gradient(92deg,#8ec2ff,#ffd479);-webkit-background-clip:text;background-clip:text;color:transparent">' + esc(C.title) + '</h1>' +
+      '<div style="font-size:12px;color:#8aa6cd;margin-top:6px">' + esc(C.proj || "") + (C.task ? " ｜ " + esc(C.task) : "") + '</div></div>' +
+      '<div class="hud2"><span>点位 <b>' + TOTAL + '</b></span><span>已看 <b id="f">0</b></span>' +
+      (C.mode === "findspot" ? '<span style="color:#ffd479">在图上点出：<b id="tgt">' + esc(C.spots[0] ? C.spots[0].name : "") + '</b></span>' : '') + '</div>' +
+      '<div class="mascotRow"><div id="mascot"></div><div class="bubble" id="bubble"></div></div>' +
+      '<div id="stage"><div id="canvasWrap"></div></div>' +
+      '<div style="text-align:center;font-size:11.5px;color:#6b82a6;margin-top:16px;line-height:1.8">' +
+      '[AI起草·待人工核定] ' + (C.src ? '判据依据：' + esc(C.src) + '<br>' : '') + '教学练习用，不作考核依据</div></div>';
+    function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+    function setMascot2(kind, text) { document.getElementById("mascot").innerHTML = MASCOT[kind] || MASCOT.normal; document.getElementById("bubble").textContent = text; }
+    window.setMascot2 = setMascot2;
+    var order = C.spots.map(function (s, i) { return i; });
+    if (C.mode === "findspot") { for (var i = order.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = order[i]; order[i] = order[j]; order[j] = t; } }
+    var askIdx = 0;
+    function target() { return C.spots[order[askIdx]]; }
+    var wrap = document.getElementById("canvasWrap");
+    var html = '<img src="' + C.img + '" id="bg">';
+    C.spots.forEach(function (s, i) { html += '<div class="spot" data-i="' + i + '" style="left:' + s.x + '%;top:' + s.y + '%">' + (i + 1) + '<span class="lab">' + esc(s.name) + '</span></div>'; });
+    wrap.innerHTML = html;
+    if (C.mode === "findspot") document.querySelectorAll(".spot .lab").forEach(function (e) { e.style.display = "none"; });
+    setMascot2("normal", C.mode === "hotspots" ? "点图上的黄点，看看每个部件是什么。" : "在图上点出：" + (target() ? target().name : ""));
+
+    wrap.querySelectorAll(".spot").forEach(function (sp) {
+      sp.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var i = +sp.dataset.i, s = C.spots[i];
+        if (C.mode === "hotspots") {
+          sp.classList.add("found");
+          found = document.querySelectorAll(".spot.found").length; document.getElementById("f").textContent = found;
+          setMascot2("happy", "【" + s.name + "】" + (s.text || ""));
+          burst(sp);
+          if (found === TOTAL) setTimeout(function () { setMascot2("happy", "全部看完了！"); rain(); }, 400);
+        } else {
+          if (s === target()) {
+            sp.classList.add("found"); sp.querySelector(".lab").style.display = "";
+            found++; document.getElementById("f").textContent = found;
+            setMascot2("happy", "对！这就是 " + s.name + "。");
+            burst(sp); askIdx++;
+            if (askIdx >= order.length) { document.getElementById("tgt").textContent = "全部完成"; setTimeout(function () { setMascot2("happy", "全部找出来，这双眼睛能上现场了。"); rain(); }, 420); }
+            else { var nt = target(); document.getElementById("tgt").textContent = nt.name; setTimeout(function () { setMascot2("normal", "下一个：" + nt.name); }, 700); }
+          } else {
+            sp.style.animation = "shk .34s"; setTimeout(function () { sp.style.animation = ""; }, 360);
+            setMascot2("sad", "这个不是" + (target() ? target().name : "") + "，再找找。");
+          }
+        }
+      });
+    });
+    /* 粒子 */
+    var ps = [], cv = null, raf = null;
+    function initFx() {
+      if (cv) return; cv = document.createElement("canvas");
+      cv.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:150";
+      document.body.appendChild(cv);
+      var rs = function () { cv.width = innerWidth; cv.height = innerHeight; }; rs(); addEventListener("resize", rs);
+    }
+    function burst(sp) {
+      initFx(); var r = sp.getBoundingClientRect();
+      for (var i = 0; i < 20; i++) { var a = Math.random() * 6.283, s = 2 + Math.random() * 6;
+        ps.push({ x: r.x + r.width / 2, y: r.y + r.height / 2, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: 1, dec: .015 + Math.random() * .015,
+          c: ["#ffd479", "#8ec2ff", "#7dffb0", "#ff9e7d"][(Math.random() * 4) | 0], r: 2 + Math.random() * 3 }); }
+      if (!raf) loop();
+    }
+    function rain() {
+      initFx();
+      for (var i = 0; i < 100; i++) ps.push({ x: Math.random() * innerWidth, y: -20 - Math.random() * 120, vx: (Math.random() - .5) * 3,
+        vy: 2 + Math.random() * 4, life: 1, dec: .006 + Math.random() * .008, r: 2 + Math.random() * 3,
+        c: ["#ffd479", "#8ec2ff", "#7dffb0", "#ff9e7d", "#fff"][(Math.random() * 5) | 0] });
+      if (!raf) loop();
+    }
+    function loop() {
+      raf = requestAnimationFrame(loop);
+      var ctx = cv.getContext("2d"); ctx.clearRect(0, 0, cv.width, cv.height);
+      for (var i = ps.length - 1; i >= 0; i--) { var p = ps[i];
+        p.vy += .16; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.life -= p.dec;
+        if (p.life <= 0) { ps.splice(i, 1); continue; }
+        ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2); }
+      ctx.globalAlpha = 1;
+      if (!ps.length) { cancelAnimationFrame(raf); raf = null; ctx.clearRect(0, 0, cv.width, cv.height); }
+    }
+  }.toString() + ")();";
+}
+
+/* ══════════ 初始化 ══════════ */
+setMascot("normal", "先上传一张设备照片，再在图上点几处要讲的地方。");
+renderItems(); drawStage();
+if (window.__CFG_PRELOAD__) {
+  CFG = window.__CFG_PRELOAD__;
+  el("mode").value = CFG.mode; el("gTitle").value = CFG.title || "";
+  el("gProj").value = CFG.proj || ""; el("gTask").value = CFG.task || ""; el("gSrc").value = CFG.src || "";
+  if (CFG.img) { drop.className = "drop has"; drop.innerHTML = '<img src="' + CFG.img + '">'; }
+  renderItems(); drawStage();
+}
+</script>
+</body>
+</html>
