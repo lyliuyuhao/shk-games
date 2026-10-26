@@ -1,0 +1,790 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>控制回路判据与数值连线</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#0a1626;color:#e8eefb;min-height:100vh}
+
+.top h1{font-size:16.5px;letter-spacing:.5px}
+
+
+
+
+.sp{flex:1}
+.btn{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:9px;cursor:pointer;
+  border:1.5px solid rgba(140,180,255,.4);background:rgba(255,255,255,.08);color:#dce8fb;transition:.15s}
+.btn:hover{background:rgba(127,182,255,.22);border-color:#7fb6ff}
+.btn.pri{background:linear-gradient(160deg,#2f6fd0,#1d4f9e);border-color:#5b9cf5;font-weight:700}
+.btn.ok{background:linear-gradient(160deg,#2f8d5a,#1d6b40);border-color:#7dffb0;font-weight:700}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{font-size:12px;padding:5px 11px}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 70px}
+h2{font-size:17px;margin:0 0 6px;color:#cfe0f8}
+.lead{font-size:12.5px;color:#8aa6cd;line-height:1.75;margin-bottom:16px}
+.catTitle{font-size:13.5px;color:#8fb4e6;margin:20px 0 10px;padding-left:9px;border-left:3px solid #ffd479}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:11px}
+.tcard{background:linear-gradient(160deg,#16294a,#0f1f38);border:1.5px solid rgba(120,170,255,.22);
+  border-radius:13px;padding:14px;cursor:pointer;transition:.16s;position:relative}
+.tcard:hover{border-color:#7fb6ff;transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,130,255,.3)}
+.tcard.sel{border-color:#ffd479;background:linear-gradient(160deg,#2a3f63,#1a2c4a);
+  box-shadow:0 0 0 2px rgba(255,212,121,.35)}
+.tcard.off{opacity:.42;cursor:not-allowed}
+.tcard.off:hover{transform:none;border-color:rgba(120,170,255,.22);box-shadow:none}
+.tcard .nm{font-size:14px;font-weight:700;margin-bottom:5px}
+.tcard .ds{font-size:11.5px;color:#8aa6cd;line-height:1.6;min-height:34px}
+.tcard .nd{font-size:11px;color:#7dffb0;margin-top:8px;padding-top:7px;border-top:1px dashed rgba(120,170,255,.2);line-height:1.6}
+.tcard.off .nd{color:#7d94b5}
+.badge{position:absolute;right:11px;top:11px;font-size:10px;padding:2px 7px;border-radius:5px}
+.badge.y{background:rgba(125,255,176,.18);color:#7dffb0;border:1px solid rgba(125,255,176,.4)}
+.badge.n{background:rgba(140,160,190,.14);color:#8aa6cd;border:1px solid rgba(140,160,190,.3)}
+.panel{background:#0f1e33;border:1px solid rgba(120,170,255,.2);border-radius:13px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:12px;color:#9db6d8;margin:10px 0 5px}
+input[type=text],input[type=number],textarea,select{width:100%;font-family:inherit;font-size:13px;
+  padding:8px 10px;border-radius:8px;border:1px solid rgba(140,180,255,.28);background:#12233c;color:#e8eefb}
+textarea{min-height:56px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:#7fb6ff;box-shadow:0 0 0 3px rgba(127,182,255,.16)}
+.row{display:flex;gap:9px}.row>*{flex:1}
+.item{background:#12233c;border:1px solid rgba(140,180,255,.2);border-radius:10px;padding:11px;margin-bottom:9px}
+.item .hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.item .hd b{font-size:12px;color:#ffd479}
+.item .hd .del{margin-left:auto;color:#ff8b8b;cursor:pointer;font-size:12px}
+.drop{border:2px dashed rgba(140,180,255,.35);border-radius:10px;padding:16px;text-align:center;
+  font-size:12.5px;color:#8fb4e6;cursor:pointer;background:#0f1e33;transition:.15s}
+.drop:hover{border-color:#7fb6ff;background:#132843}
+.drop.has{border-style:solid;border-color:#7dffb0;padding:0;overflow:hidden}
+.drop img{width:100%;display:block}
+.tip{font-size:11.5px;color:#7d94b5;line-height:1.7;margin-top:7px}
+.hide{display:none!important}
+.mascotRow{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px}
+.bubble{position:relative;background:#fff;color:#1a2b45;border-radius:12px;padding:10px 14px;
+  font-size:12.5px;line-height:1.6;max-width:420px;box-shadow:0 8px 24px rgba(0,0,0,.4);flex:1}
+.bubble:after{content:"";position:absolute;left:-8px;top:20px;border:8px solid transparent;border-right-color:#fff}
+#stage{background:#0f1e33;border-radius:12px;border:1px solid rgba(120,170,255,.2);padding:14px}
+#canvasWrap{position:relative;display:inline-block;max-width:100%}
+#canvasWrap img{max-width:100%;display:block;border-radius:10px}
+.spot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  background:rgba(255,212,121,.92);border:2.5px solid #fff;cursor:pointer;z-index:5;
+  box-shadow:0 0 0 4px rgba(255,212,121,.28);display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#4a3400;transition:.15s}
+.spot:hover{transform:scale(1.16)}
+.spot.found{background:#7dffb0;box-shadow:0 0 0 5px rgba(125,255,176,.42)}
+.spot .lab{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;
+  background:rgba(8,20,38,.94);color:#e8eefb;font-size:11px;padding:2px 8px;border-radius:5px;white-space:nowrap;
+  border:1px solid rgba(140,180,255,.35)}
+.hud2{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px}
+.hud2 span{background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px}
+.hud2 b{color:#ffd479}
+.shake{animation:shk .34s}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}70%{transform:translateX(6px)}}
+</style></head><body><div class="wrap" style="max-width:960px;margin:0 auto;padding:18px 14px 50px"><div style="text-align:center;margin-bottom:12px"><h1 style="font-size:21px;background:linear-gradient(92deg,#8ec2ff,#ffd479);-webkit-background-clip:text;background-clip:text;color:transparent">控制回路判据与数值连线</h1><div style="font-size:12px;color:#8aa6cd;margin-top:6px">项目5 二次回路调试 ｜ 5.5 控制回路调试</div></div><div class="mascotRow"><div id="mascot"></div><div class="bubble" id="bubble"></div></div><div id="stage"><div id="pv"></div></div><div style="text-align:center;font-size:11.5px;color:#6b82a6;margin-top:18px;line-height:1.8">[AI起草·待人工核定] 判据依据：GB/T 14285-2023；DL/T 995-2016<br>教学练习用，不作考核依据 ｜ 类型：lianxian</div></div><script>window.__CFG__={"type":"lianxian","title":"控制回路判据与数值连线","proj":"项目5 二次回路调试","task":"5.5 控制回路调试","src":"GB/T 14285-2023；DL/T 995-2016","img":"","img2":"","items":[{"l":"≤3%","r":"保护回路电压降","why":"GB/T 14285：保护回路电压降不大于 3%"},{"l":"≥10MΩ","r":"整组二次回路绝缘","why":"DL/T 995-2016 第 5.3.2.4 条 b)"},{"l":"≤2%","r":"操作电源母线纹波系数","why":"操作电源纹波系数不大于 2%"},{"l":"1000V","r":"二次回路绝缘电阻表电压等级","why":"GB 50150：用 1000V 绝缘电阻表"},{"l":"1min","r":"交流耐压试验时长","why":"1000V 交流耐压 1 分钟"}]};var $=function(s){return document.querySelector(s)};var shuf=function shuf(a){ for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;} return a; };var pfx=function pfx(x,y,n,root){
+  var box=root.querySelector("#fxl")||root; n=n||18;
+  var fx=document.createElement("div");
+  fx.style.cssText="position:absolute;left:"+x+"px;top:"+y+"px;width:8px;height:8px;pointer-events:none;z-index:99";
+  box.appendChild(fx);
+  for(var i=0;i<n;i++){
+    var p=document.createElement("i");
+    var a=Math.random()*6.283, sp=2+Math.random()*5;
+    p.style.cssText="position:absolute;width:5px;height:5px;border-radius:2px;background:"+
+      ["#ffd479","#8ec2ff","#7dffb0","#ff9e7d"][(Math.random()*4)|0]+
+      ";transition:transform .62s cubic-bezier(.2,.8,.3,1),opacity .62s";
+    fx.appendChild(p);
+    requestAnimationFrame(function(){ p.style.transform="translate("+(Math.cos(a)*sp*9)+"px,"+(Math.sin(a)*sp*9+18)+"px) rotate(180deg)"; p.style.opacity="0"; });
+  }
+  setTimeout(function(){ fx.remove(); },700);
+};var MASCOT={"normal":"<svg width=\"78\" height=\"88\" viewBox=\"0 0 86 96\"><ellipse cx=\"43\" cy=\"90\" rx=\"24\" ry=\"4\" fill=\"rgba(0,0,0,.35)\"/><rect x=\"24\" y=\"52\" width=\"38\" height=\"34\" rx=\"9\" fill=\"#2f6fd0\"/><rect x=\"37\" y=\"52\" width=\"12\" height=\"34\" fill=\"#ffd479\" opacity=\".9\"/><circle cx=\"43\" cy=\"34\" r=\"21\" fill=\"#ffd9a8\"/><path d=\"M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z\" fill=\"#ffd479\"/><rect x=\"18\" y=\"24\" width=\"50\" height=\"5\" rx=\"2.5\" fill=\"#f5a623\"/><circle cx=\"35\" cy=\"34\" r=\"3.1\" fill=\"#22304a\"/><circle cx=\"51\" cy=\"34\" r=\"3.1\" fill=\"#22304a\"/><circle cx=\"36\" cy=\"33\" r=\"1.1\" fill=\"#fff\"/><circle cx=\"52\" cy=\"33\" r=\"1.1\" fill=\"#fff\"/><path d=\"M37 43 q6 5 12 0\" stroke=\"#22304a\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><circle cx=\"27\" cy=\"41\" r=\"3.6\" fill=\"#ffb3a0\" opacity=\".65\"/><circle cx=\"59\" cy=\"41\" r=\"3.6\" fill=\"#ffb3a0\" opacity=\".65\"/></svg>","happy":"<svg width=\"78\" height=\"88\" viewBox=\"0 0 86 96\"><ellipse cx=\"43\" cy=\"90\" rx=\"24\" ry=\"4\" fill=\"rgba(0,0,0,.35)\"/><rect x=\"24\" y=\"52\" width=\"38\" height=\"34\" rx=\"9\" fill=\"#2f8d5a\"/><rect x=\"37\" y=\"52\" width=\"12\" height=\"34\" fill=\"#ffd479\" opacity=\".9\"/><circle cx=\"43\" cy=\"34\" r=\"21\" fill=\"#ffd9a8\"/><path d=\"M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z\" fill=\"#ffd479\"/><rect x=\"18\" y=\"24\" width=\"50\" height=\"5\" rx=\"2.5\" fill=\"#f5a623\"/><path d=\"M31 33 q4 -5 8 0\" stroke=\"#22304a\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M47 33 q4 -5 8 0\" stroke=\"#22304a\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M34 41 q9 9 18 0\" stroke=\"#22304a\" stroke-width=\"2.8\" fill=\"none\" stroke-linecap=\"round\"/><circle cx=\"26\" cy=\"40\" r=\"4\" fill=\"#ffb3a0\" opacity=\".75\"/><circle cx=\"60\" cy=\"40\" r=\"4\" fill=\"#ffb3a0\" opacity=\".75\"/><text x=\"70\" y=\"24\" font-size=\"17\">👍</text></svg>","sad":"<svg width=\"78\" height=\"88\" viewBox=\"0 0 86 96\"><ellipse cx=\"43\" cy=\"90\" rx=\"24\" ry=\"4\" fill=\"rgba(0,0,0,.35)\"/><rect x=\"24\" y=\"52\" width=\"38\" height=\"34\" rx=\"9\" fill=\"#8a3040\"/><rect x=\"37\" y=\"52\" width=\"12\" height=\"34\" fill=\"#ffd479\" opacity=\".9\"/><circle cx=\"43\" cy=\"34\" r=\"21\" fill=\"#ffd9a8\"/><path d=\"M19 26 q24 -20 48 0 l-3 5 q-21 -16 -42 0z\" fill=\"#ffd479\"/><rect x=\"18\" y=\"24\" width=\"50\" height=\"5\" rx=\"2.5\" fill=\"#f5a623\"/><path d=\"M31 32 q4 4 8 0\" stroke=\"#22304a\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M47 32 q4 4 8 0\" stroke=\"#22304a\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M36 46 q7 -6 14 0\" stroke=\"#22304a\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/><text x=\"66\" y=\"22\" font-size=\"15\">💦</text></svg>"};function say(kind,text){var m=$("#mascot");if(m)m.innerHTML=MASCOT[kind]||MASCOT.normal;var b=$("#bubble");if(b)b.textContent=text}var ENGINE={hotspots:{html:function(C){
+    if(!C.img)return "<div style='color:#7d94b5;padding:20px'>还没有背景图。</div>";
+    var h='<div class="hud2"><span>点位 <b>'+C.items.length+'</b></span><span>已看 <b id="f">0</b></span></div><div id="canvasWrap" style="position:relative;display:inline-block;max-width:100%"><img src="'+C.img+'" style="max-width:100%;display:block;border-radius:10px">';
+    C.items.forEach(function(s,i){h+='<div class="spot" data-i="'+i+'" style="left:'+s.x+'%;top:'+s.y+'%">'+(i+1)+'<span class="lab">'+esc(s.name||"")+'</span></div>'});
+    return h+'</div>';
+  },mount:function(C,root){
+    var f=0;
+    root.querySelectorAll(".spot").forEach(function(sp){
+      sp.onclick=function(){
+        var s=C.items[+sp.dataset.i]; sp.classList.add("found");
+        f=root.querySelectorAll(".spot.found").length;
+        var fe=root.querySelector("#f"); if(fe)fe.textContent=f;
+        say("happy","【"+(s.name||"")+"】"+(s.text||""));
+        if(f===C.items.length)setTimeout(function(){say("happy","全部看完了！")},350);
+      };
+    });
+  }},findspot:{html:function(C){
+    if(!C.img)return "<div style='color:#7d94b5;padding:20px'>还没有背景图。</div>";
+    var h='<div class="hud2"><span>要找 <b id="tgt">'+esc((C.items[0]||{}).name||"")+'</b></span><span>已找 <b id="f">0</b>/'+C.items.length+'</span></div><div id="canvasWrap" style="position:relative;display:inline-block;max-width:100%"><img src="'+C.img+'" style="max-width:100%;display:block;border-radius:10px">';
+    C.items.forEach(function(s,i){h+='<div class="spot" data-i="'+i+'" style="left:'+s.x+'%;top:'+s.y+'%;opacity:.0">'+(i+1)+'</div>'});
+    return h+'</div>';
+  },mount:function(C,root){
+    var idx=0,n=0;
+    var order=C.items.map(function(_,i){return i});
+    for(var i=order.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=order[i];order[i]=order[j];order[j]=t}
+    root.querySelectorAll(".spot").forEach(function(sp){
+      sp.style.opacity="1"; sp.style.background="transparent"; sp.style.border="0"; sp.style.boxShadow="none";
+      sp.onclick=function(){
+        var i=+sp.dataset.i;
+        if(i===order[idx]){
+          sp.style.background="rgba(125,255,176,.85)"; n++;
+          root.querySelector("#f").textContent=n;
+          say("happy","对！这就是 "+C.items[i].name+"。");
+          idx++;
+          if(idx>=order.length){root.querySelector("#tgt").textContent="全部完成";say("happy","全找出来了，这双眼睛能上现场了。")}
+          else root.querySelector("#tgt").textContent=C.items[order[idx]].name;
+        }else{
+          sp.classList.add("shake");setTimeout(function(){sp.classList.remove("shake")},360);
+          say("sad","这个不是「"+(C.items[order[idx]]||{}).name+"」，再找找。");
+        }
+      };
+    });
+  }},draglabel:{html:function(C){
+    if(!C.img)return "<div style='color:#7d94b5;padding:20px'>还没有背景图。</div>";
+    var h='<div class="tip" style="margin-bottom:8px">把下面的标签拖到图上正确位置</div><div id="canvasWrap" style="position:relative;display:inline-block;max-width:100%"><img src="'+C.img+'" id="bg" style="max-width:100%;display:block;border-radius:10px"></div>';
+    h+='<div id="pool" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">';
+    C.items.forEach(function(s,i){h+='<div class="spot" draggable="true" data-i="'+i+'" style="position:static;width:auto;height:auto;margin:0;padding:7px 13px;border-radius:8px;display:inline-flex;background:rgba(255,212,121,.92);color:#4a3400;font-weight:700;font-size:12.5px">'+esc(s.label||"")+'</div>'});
+    return h+'</div>';
+  },mount:function(C,root){
+    var sel=null,done=0;
+    var wrap=root.querySelector("#canvasWrap"),bg=root.querySelector("#bg");
+    root.querySelectorAll("#pool .spot").forEach(function(el){
+      el.onclick=function(){ root.querySelectorAll("#pool .spot").forEach(function(x){x.style.outline=""}); el.style.outline="3px solid #7fb6ff"; sel=el; };
+      el.ondragstart=function(e){sel=el;try{e.dataTransfer.setData("text/plain","x")}catch(x){}};
+    });
+    function dropAt(cx,cy){
+      if(!sel)return;
+      var r=bg.getBoundingClientRect();
+      var px=(cx-r.left)/r.width*100, py=(cy-r.top)/r.height*100;
+      if(px<0||px>100||py<0||py>100)return;
+      var i=+sel.dataset.i, s=C.items[i];
+      var d=Math.sqrt(Math.pow(px-s.x,2)+Math.pow(py-s.y,2));
+      var tol=Math.max(8,1200/r.width*8);
+      if(d<=tol){
+        sel.style.background="rgba(125,255,176,.9)"; sel.style.color="#0b3d1f"; sel.style.pointerEvents="none";
+        sel=null; done++; say("happy","放对了！");
+        if(done===C.items.length)say("happy","全部放对，屏柜认件过关。");
+      }else{
+        sel.classList.add("shake");setTimeout(function(){if(sel)sel.classList.remove("shake")},360);
+        say("sad","位置不对，再靠近一点。");
+      }
+    }
+    wrap.onclick=function(e){dropAt(e.clientX,e.clientY)};
+    wrap.ondragover=function(e){e.preventDefault()};
+    wrap.ondrop=function(e){e.preventDefault();dropAt(e.clientX,e.clientY)};
+  }},sequence:{html:function(C){
+    var h='<div class="tip" style="margin-bottom:8px">把步骤图拖成正确顺序，然后点「检查顺序」</div><div id="seq" style="display:flex;gap:10px;flex-wrap:wrap">';
+    C.items.forEach(function(s,i){h+='<div class="seqc" draggable="true" data-i="'+i+'" style="width:150px;background:#12233c;border:1.5px solid rgba(140,180,255,.3);border-radius:10px;padding:7px;cursor:grab"><div style="font-size:11px;color:#ffd479;margin-bottom:5px">第 <b class="no">?</b> 步</div>'+(s.img?'<img src="'+s.img+'" style="width:100%;border-radius:6px;display:block">':'<div style="height:64px;background:#0f1e33;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#6b82a6;font-size:11px">无图</div>')+'<div style="font-size:11.5px;margin-top:6px;line-height:1.5">'+esc(s.cap||"")+'</div></div>'});
+    return h+'</div><div style="margin-top:12px"><button class="btn" id="chk">检查顺序</button></div><div id="msg" style="margin-top:9px;font-size:12.5px"></div>';
+  },mount:function(C,root){
+    var box=root.querySelector("#seq"), from=null;
+    var order=C.items.map(function(_,i){return i});
+    for(var i=order.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=order[i];order[i]=order[j];order[j]=t}
+    function draw(){
+      box.innerHTML="";
+      order.forEach(function(oi,pos){
+        var s=C.items[oi];
+        var d=document.createElement("div");d.className="seqc";d.draggable=true;d.dataset.pos=pos;
+        d.style.cssText="width:150px;background:#12233c;border:1.5px solid rgba(140,180,255,.3);border-radius:10px;padding:7px;cursor:grab";
+        d.innerHTML='<div style="font-size:11px;color:#ffd479;margin-bottom:5px">第 <b>'+(pos+1)+'</b> 步</div>'+
+          (s.img?'<img src="'+s.img+'" style="width:100%;border-radius:6px;display:block">':'<div style="height:64px;background:#0f1e33;border-radius:6px"></div>')+
+          '<div style="font-size:11.5px;margin-top:6px;line-height:1.5">'+esc(s.cap||"")+'</div>';
+        d.ondragstart=function(e){from=pos;try{e.dataTransfer.setData("text/plain","x")}catch(x){}};
+        d.ondragover=function(e){e.preventDefault();d.style.borderColor="#7fb6ff"};
+        d.ondragleave=function(){d.style.borderColor="rgba(140,180,255,.3)"};
+        d.ondrop=function(e){e.preventDefault();
+          if(from===null||from===pos)return;
+          var item=order.splice(from,1)[0];order.splice(pos,0,item);from=null;draw();
+        };
+        box.appendChild(d);
+      });
+    }
+    draw();
+    root.querySelector("#chk").onclick=function(){
+      var right=order.filter(function(v,i){return v===i}).length;
+      var m=root.querySelector("#msg");
+      if(right===order.length){m.style.color="#7dffb0";m.textContent="顺序全对！";say("happy","顺序全对，工序记住了。")}
+      else{m.style.color="#ff8b8b";m.textContent="第 "+(order.map(function(v,i){return v===i?0:i+1}).filter(function(x){return x})).join("、")+" 位还对不上";say("sad","再想想哪一步必须等前一步做完。")}
+    };
+  }},juxtapose:{html:function(C){
+    if(!C.img||!C.img2)return "<div style='color:#7d94b5;padding:20px'>需要两张对比图。</div>";
+    return '<div id="jux" style="position:relative;display:inline-block;max-width:100%;overflow:hidden;border-radius:10px">'+
+      '<img src="'+C.img+'" style="max-width:100%;display:block">'+
+      '<div id="top" style="position:absolute;inset:0;overflow:hidden;width:50%"><img src="'+C.img2+'" style="height:100%;width:auto;max-width:none;display:block"></div>'+
+      '<div id="hd" style="position:absolute;top:0;bottom:0;left:50%;width:3px;background:#ffd479;box-shadow:0 0 12px rgba(255,212,121,.9)"></div>'+
+      '</div><input type="range" min="0" max="100" value="50" id="rng" style="width:min(100%,720px);margin-top:12px">'+
+      '<div id="cap" style="font-size:12.5px;color:#8aa6cd;margin-top:6px"></div>';
+  },mount:function(C,root){
+    var rng=root.querySelector("#rng"),top=root.querySelector("#top"),hd=root.querySelector("#hd"),cap=root.querySelector("#cap");
+    var imgs=root.querySelectorAll("#jux img");
+    function upd(){
+      var v=+rng.value;
+      top.style.width=v+"%"; hd.style.left=v+"%";
+      if(imgs[1]) imgs[1].style.width=root.querySelector("#jux").getBoundingClientRect().width+"px";
+      cap.textContent = v<50 ? "左边：改装前 / 错误（"+(C.items[0]&&C.items[0].cap||"")+"）" : "右边：改装后 / 正确（"+(C.items[1]&&C.items[1].cap||"")+"）";
+    }
+    rng.oninput=upd; addEventListener("resize",upd); setTimeout(upd,60);
+  }},fillblank:{html:function(C){
+    if(!C.items.length)return "<div style='color:#7d94b5;padding:20px'>还没有题目。</div>";
+    var h='<div class="hud2"><span>题数 <b>'+C.items.length+'</b></span><span>答对 <b id="ok">0</b></span></div>';
+    C.items.forEach(function(q,i){
+      var txt=esc(q.q||"").replace(/___/g,'<input type="text" data-i="'+i+'" style="width:96px;display:inline-block;padding:3px 8px;font-size:13px;border-radius:6px;border:1px solid #7fb6ff;background:#12233c;color:#fff;text-align:center">');
+      h+='<div style="background:#12233c;border:1px solid rgba(140,180,255,.2);border-radius:10px;padding:11px;margin-bottom:9px">'+
+        '<div style="font-size:13px;line-height:2">'+(i+1)+'. '+txt+'</div>'+
+        '<div style="margin-top:7px"><button class="btn sm" data-chk="'+i+'">对答案</button> <span data-res="'+i+'" style="font-size:12px"></span></div></div>';
+    });
+    return h;
+  },mount:function(C,root){
+    var ok=new Set();
+    root.querySelectorAll("[data-chk]").forEach(function(b){
+      b.onclick=function(){
+        var i=+b.dataset.chk, q=C.items[i];
+        var inp=root.querySelector('input[data-i="'+i+'"]');
+        var v=(inp.value||"").trim().replace(/\s/g,"");
+        var ans=(q.a||"").split("/").map(function(x){return x.trim().replace(/\s/g,"")});
+        var r=root.querySelector('[data-res="'+i+'"]');
+        if(ans.indexOf(v)>=0){
+          inp.style.borderColor="#7dffb0"; inp.style.background="rgba(125,255,176,.15)";
+          r.style.color="#7dffb0"; r.textContent="✔ 对了"+(q.why?"："+q.why:"");
+          if(!ok.has(i)){ok.add(i);root.querySelector("#ok").textContent=ok.size}
+          say("happy","对！"+(q.why||""));
+          if(ok.size===C.items.length)setTimeout(function(){say("happy","全部答对，判据数值记住了。")},400);
+        }else{
+          inp.style.borderColor="#ff8b8b"; inp.style.background="rgba(255,139,139,.12)";
+          r.style.color="#ff8b8b"; r.textContent="✘ 再想想"+(q.why?"（提示："+q.why+"）":"");
+          say("sad","不对，再想想。");
+        }
+      };
+    });
+  }},llk:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有配对内容。</div>";
+   var N=C.items.length*2, cols=Math.ceil(Math.sqrt(N))+1, rows=Math.ceil(N/cols);
+   return '<div class="hud2" style="display:flex;gap:9px;margin-bottom:10px;font-size:12.5px">'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">剩余 <b id="left">'+N+'</b> 块</span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">连击 <b id="cb">0</b></span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">用时 <b id="tm">0</b>s</span></div>'+
+     '<div style="font-size:12px;color:#8a95a5;margin-bottom:8px">点两个配对的方块；路径最多拐两个弯（可绕外圈）才能连通</div>'+
+     '<div id="llkG" style="position:relative;display:grid;grid-template-columns:repeat('+cols+',minmax(0,1fr));gap:5px"></div>';
+ },mount:function(C,root){
+   var N0=C.items.length*2;
+   // 内区比方块数多留空位：经典连连看必须留通道，否则对角块无路可连
+   var COLS=Math.max(4, Math.ceil(Math.sqrt(N0))+1);
+   var ROWS=Math.max(3, Math.ceil(N0/COLS)+1);
+   var W=COLS+2, H=ROWS+2;
+   var g=[], tileAt={};
+   for(var r0=0;r0<H;r0++){ g.push([]); for(var c0=0;c0<W;c0++) g[r0].push(null); }
+   var tiles=[]; C.items.forEach(function(it,i){ tiles.push({i:i,t:it.a}); tiles.push({i:i,t:it.b}); });
+   shuf(tiles);
+   var pos=[]; for(var r1=1;r1<=ROWS;r1++) for(var c1=1;c1<=COLS;c1++) pos.push([c1,r1]);
+   shuf(pos);
+   for(var k1=0;k1<tiles.length && k1<pos.length;k1++){ g[pos[k1][1]][pos[k1][0]]=tiles[k1]; }
+   var box=root.querySelector("#llkG");
+   box.style.gridTemplateColumns="repeat("+W+",minmax(0,1fr))";
+   var cells={};
+   for(var y=0;y<H;y++) for(var x=0;x<W;x++){
+     var d=document.createElement("div");
+     var tg=g[y][x];
+     d.style.cssText="aspect-ratio:1/1;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;line-height:1.25;padding:2px;";
+     if(tg){ d.style.background="linear-gradient(150deg,#2f6fd0,#1d4f9e)"; d.style.color="#fff"; d.style.cursor="pointer"; d.style.border="1.5px solid rgba(140,180,255,.45)"; d.textContent=tg.t; d.dataset.r=y; d.dataset.c=x; d.dataset.i=tg.i; }
+     else { d.style.visibility="hidden"; }
+     box.appendChild(d); cells[x+","+y]=d;
+   }
+   var sel=null, combo=0, leftT=C.items.length*2, t0=Date.now();
+   var timer=setInterval(function(){ var e=root.querySelector("#tm"); if(e) e.textContent=Math.round((Date.now()-t0)/1000); },500);
+   function empty(x,y){ return x<0||y<0||x>=W||y>=H ? false : g[y][x]===null; }
+   function clearPath(a,b){ // a,b = [x,y]
+     if(a[0]===b[0]){ var s=Math.min(a[1],b[1]), e=Math.max(a[1],b[1]); for(var y=s+1;y<e;y++) if(!empty(a[0],y)) return false; return true; }
+     if(a[1]===b[1]){ var s2=Math.min(a[0],b[0]), e2=Math.max(a[0],b[0]); for(var x=s2+1;x<e2;x++) if(!empty(x,a[1])) return false; return true; }
+     return false;
+   }
+   function link(a,b){
+     if(clearPath(a,b)) return true;
+     // 一个拐弯
+     if(empty(a[0],b[1]) && clearPath(a,[a[0],b[1]]) && clearPath([a[0],b[1]],b)) return true;
+     if(empty(b[0],a[1]) && clearPath(a,[b[0],a[1]]) && clearPath([b[0],a[1]],b)) return true;
+     // 两个拐弯
+     for(var y=0;y<H;y++){
+       if(empty(a[0],y) && empty(b[0],y) && clearPath(a,[a[0],y]) && clearPath([a[0],y],[b[0],y]) && clearPath([b[0],y],b)) return true;
+     }
+     for(var x=0;x<W;x++){
+       if(empty(x,a[1]) && empty(x,b[1]) && clearPath(a,[x,a[1]]) && clearPath([x,a[1]],[x,b[1]]) && clearPath([x,b[1]],b)) return true;
+     }
+     return false;
+   }
+   function anyPair(){
+     var live=[]; for(var yy=1;yy<H;yy++) for(var xx=1;xx<W;xx++){ if(g[yy][xx]) live.push([xx,yy,g[yy][xx].i]); }
+     for(var a=0;a<live.length;a++) for(var b=a+1;b<live.length;b++){
+       if(live[a][2]===live[b][2] && link([live[a][0],live[a][1]],[live[b][0],live[b][1]])) return true;
+     }
+     return false;
+   }
+   function reshuffle(){
+     var live=[]; for(var yy=1;yy<H;yy++) for(var xx=1;xx<W;xx++){ if(g[yy][xx]){ live.push(g[yy][xx]); g[yy][xx]=null; } }
+     var fp=[]; for(var r2=1;r2<=ROWS;r2++) for(var c2=1;c2<=COLS;c2++) fp.push([c2,r2]);
+     shuf(fp); shuf(live);
+     live.forEach(function(t,idx){ var pp=fp[idx]; if(pp) g[pp[1]][pp[0]]=t; });
+     while(box.firstChild) box.removeChild(box.firstChild);
+     for(var y3=0;y3<H;y3++) for(var x3=0;x3<W;x3++){
+       var dd=document.createElement("div"), tg=g[y3][x3];
+       dd.style.cssText="aspect-ratio:1/1;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;line-height:1.25;padding:2px;";
+       if(tg){ dd.style.background="linear-gradient(150deg,#2f6fd0,#1d4f9e)"; dd.style.color="#fff"; dd.style.cursor="pointer"; dd.style.border="1.5px solid rgba(140,180,255,.45)"; dd.textContent=tg.t; dd.dataset.r=y3; dd.dataset.c=x3; dd.dataset.i=tg.i; }
+       else { dd.style.visibility="hidden"; }
+       box.appendChild(dd);
+     }
+     sel=null;
+     say("normal","剩下的块没有可连的了，已自动重排。");
+   }
+   box.onclick=function(e){
+     var d=e.target.closest("[data-r]"); if(!d) return;
+     var r=+d.dataset.r, c=+d.dataset.c;
+     if(!g[r][c]) return;
+     if(sel===d){ d.style.outline=""; sel=null; return; }
+     if(!sel){ sel=d; d.style.outline="3px solid #ffd479"; return; }
+     var r0=+sel.dataset.r, c0=+sel.dataset.c;
+     var t1=g[r0][c0], t2=g[r][c];
+     if(sel!==d && t1.i===t2.i && link([c0,r0],[c,r])){
+       [sel,d].forEach(function(x){ x.style.background="rgba(125,255,176,.85)"; x.style.color="#0b3d1f"; });
+       var _a=sel;
+       setTimeout(function(){ _a.style.visibility="hidden"; d.style.visibility="hidden"; },180);
+       var rect=d.getBoundingClientRect(), prect=box.getBoundingClientRect();
+       pfx(rect.left-prect.left+rect.width/2, rect.top-prect.top+rect.height/2, 14, box);
+       g[r0][c0]=null; g[r][c]=null; sel=null;
+       combo++; leftT-=2;
+       root.querySelector("#left").textContent=leftT;
+       root.querySelector("#cb").textContent=combo;
+       say("happy", "配对："+t1.t+" ↔ "+t2.t + "。" + (C.items[t1.i].why||""));
+       if(leftT===0){ clearInterval(timer); say("happy","全部消除！用时 "+Math.round((Date.now()-t0)/1000)+" 秒。"); }
+       else if(!anyPair()){ setTimeout(reshuffle, 420); }
+     } else {
+       sel.style.outline=""; d.classList.add("shake");
+       var dd=d; setTimeout(function(){ dd.classList.remove("shake"); },360);
+       combo=0; root.querySelector("#cb").textContent="0";
+       say("sad","这两块配不上，换一对。");
+       sel=d; d.style.outline="3px solid #ffd479";
+     }
+   };
+ }},fanpai:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有牌对。</div>";
+   var N=C.items.length*2, cols=Math.min(5,Math.ceil(Math.sqrt(N)));
+   return '<div class="hud2" style="display:flex;gap:9px;margin-bottom:10px;font-size:12.5px">'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">剩 <b id="fleft">'+N+'</b></span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">翻牌 <b id="fmv">0</b> 次</span></div>'+
+     '<div id="fG" style="display:grid;grid-template-columns:repeat('+cols+',minmax(0,1fr));gap:7px;perspective:900px"></div>';
+ },mount:function(C,root){
+   var N=C.items.length*2, cols=Math.min(5,Math.ceil(Math.sqrt(N)));
+   var box=root.querySelector("#fG"); box.style.gridTemplateColumns="repeat("+cols+",minmax(0,1fr))";
+   var deck=[]; C.items.forEach(function(it,i){ deck.push({i:i,t:it.a}); deck.push({i:i,t:it.b}); });
+   shuf(deck);
+   var open=[], lock=false, leftT=N, mv=0;
+   deck.forEach(function(cd){
+     var d=document.createElement("div");
+     d.style.cssText="aspect-ratio:3/4;position:relative;transform-style:preserve-3d;transition:transform .42s;cursor:pointer";
+     d.innerHTML='<div style="position:absolute;inset:0;backface-visibility:hidden;border-radius:9px;background:linear-gradient(150deg,#2f6fd0,#1d4f9e);border:1.5px solid rgba(140,180,255,.5);display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.55)">?</div>'+
+       '<div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);border-radius:9px;background:linear-gradient(150deg,#fffdf5,#ffecc4);border:1.5px solid rgba(255,212,121,.7);display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;color:#4a3400;font-weight:700;padding:4px">'+esc(cd.t)+'</div>';
+     d.dataset.i=cd.i;
+     d.onclick=function(){
+       if(lock||d.dataset.done) return;
+       if(open.indexOf(d)>=0) return;
+       d.style.transform="rotateY(180deg)"; open.push(d); mv++;
+       root.querySelector("#fmv").textContent=mv;
+       if(open.length===2){
+         lock=true;
+         var a=open[0], b=open[1];
+         if(a.dataset.i===b.dataset.i){
+           setTimeout(function(){
+             a.dataset.done=1; b.dataset.done=1;
+             a.style.opacity=".55"; b.style.opacity=".55";
+             leftT-=2; root.querySelector("#fleft").textContent=leftT;
+             say("happy","配对成功。"+(C.items[+a.dataset.i].why||""));
+             open=[]; lock=false;
+             if(leftT===0) say("happy","全部配对完成，用了 "+mv+" 次翻牌。");
+           },420);
+         } else {
+           setTimeout(function(){
+             a.style.transform=""; b.style.transform="";
+             say("sad","这两张不是一对，记住了。");
+             open=[]; lock=false;
+           },820);
+         }
+       }
+     };
+     box.appendChild(d);
+   });
+ }},dadi:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有判断项。</div>";
+   var h='<div class="hud2" style="display:flex;gap:9px;margin-bottom:10px;font-size:12.5px">'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">得分 <b id="ds">0</b></span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">剩余 <b id="dt">60</b> 秒</span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">命中 <b id="dh">0</b></span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">误打 <b id="dw">0</b></span></div>'+
+     '<div style="font-size:12px;color:#8a95a5;margin-bottom:8px">只打<b style="color:#7dffb0">绿色（正确）</b>的方块，红色是错误判据，打了扣分</div>'+
+     '<div id="dG" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>';
+   return h;
+ },mount:function(C,root){
+   var box=root.querySelector("#dG"), holes=[];
+   for(var i=0;i<12;i++){
+     var d=document.createElement("div");
+     d.style.cssText="position:relative;aspect-ratio:1/1;border-radius:10px;background:#0d1c30;border:1.5px solid rgba(140,180,255,.18);overflow:hidden;display:flex;align-items:center;justify-content:center";
+     d.innerHTML='<div class="mole" style="position:absolute;inset:4px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10.5px;line-height:1.25;padding:3px;transform:translateY(115%);transition:transform .2s cubic-bezier(.2,.9,.3,1.3);cursor:pointer"></div>';
+     box.appendChild(d); holes.push(d.querySelector(".mole"));
+   }
+   var score=0, hit=0, wrong=0, t=60, cur=[], over=false;
+   var sd=root.querySelector("#ds"), st=root.querySelector("#dt"), sh=root.querySelector("#dh"), sw=root.querySelector("#dw");
+   var timer=setInterval(function(){ t--; st.textContent=t; if(t<=0) stop(); },1000);
+   function stop(){ over=true; clearInterval(timer); clearInterval(spawn);
+     cur.forEach(function(o){ o.el.style.transform="translateY(115%)"; });
+     say(score>0?"happy":"sad", "时间到。得分 "+score+"，命中 "+hit+"，误打 "+wrong+"。"); }
+   function pop(){
+     if(over) return;
+     holes.forEach(function(h2){ if(!h2.dataset.on) h2.style.transform="translateY(115%)"; });
+     var it=C.items[(Math.random()*C.items.length)|0];
+     var el=holes[(Math.random()*holes.length)|0];
+     var ok=(it.ok==="\u5bf9"||it.ok==="true"||it.ok==="1"||it.ok==="\u2714");
+     el.textContent=it.text;
+     el.style.background=ok?"linear-gradient(150deg,#2f8d5a,#1d6b40)":"linear-gradient(150deg,#8a3040,#5c1f2b)";
+     el.style.color="#fff"; el.style.transform="translateY(0)"; el.dataset.on="1";
+     el.onclick=function(){
+       if(over) return;
+       el.dataset.on=""; el.style.transform="translateY(115%)";
+       if(ok){ score+=10; hit++; sh.textContent=hit; sd.textContent=score;
+         var r=el.getBoundingClientRect(), br=box.getBoundingClientRect();
+         pfx(r.left-br.left+r.width/2, r.top-br.top+r.height/2, 12, box);
+         say("happy","对："+it.text+(it.why?"　("+it.why+")":""));
+       } else { score=Math.max(0,score-8); wrong++; sw.textContent=wrong; sd.textContent=score;
+         say("sad","错判："+it.text+"。"+(it.why||"")); }
+     };
+     setTimeout(function(){ el.dataset.on=""; el.style.transform="translateY(115%)"; }, 1500);
+   }
+   var spawn=setInterval(pop, 900); pop();
+ }},lianxian:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有连线条目。</div>";
+   var h='<div style="font-size:12px;color:#8a95a5;margin-bottom:8px">先点左边一项，再点右边与它配对的项</div>'+
+     '<div id="lxWrap" style="position:relative;display:grid;grid-template-columns:1fr 90px 1fr;gap:0;align-items:start">'+
+     '<div id="lxL" style="display:flex;flex-direction:column;gap:8px">';
+   C.items.forEach(function(it,i){ h+='<div class="lxl" data-i="'+i+'" style="background:linear-gradient(150deg,#2f6fd0,#1d4f9e);border:1.5px solid rgba(140,180,255,.45);border-radius:9px;padding:10px;font-size:12.5px;cursor:pointer;text-align:right">'+esc(it.l)+'</div>'; });
+   h+='</div><div></div><div id="lxR" style="display:flex;flex-direction:column;gap:8px">';
+   var ord=C.items.map(function(_,i){return i}); shuf(ord);
+   ord.forEach(function(i){ h+='<div class="lxr" data-i="'+i+'" style="background:rgba(255,212,121,.9);color:#4a3400;border:1.5px solid rgba(255,212,121,.7);border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer">'+esc(C.items[i].r)+'</div>'; });
+   h+='</div><svg id="lxSvg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></svg></div>'+
+     '<div style="margin-top:12px;font-size:12.5px">已连 <b id="lxok" style="color:#7dffb0">0</b> / '+C.items.length+'</div>';
+   return h;
+ },mount:function(C,root){
+   var wrap=root.querySelector("#lxWrap"), svg=root.querySelector("#lxSvg");
+   var sel=null, done=0;
+   function line(a,b){
+     var wr=wrap.getBoundingClientRect(), ar=a.getBoundingClientRect(), br=b.getBoundingClientRect();
+     var l=document.createElementNS("http://www.w3.org/2000/svg","line");
+     l.setAttribute("x1", (ar.right-wr.left)); l.setAttribute("y1",(ar.top+ar.height/2-wr.top));
+     l.setAttribute("x2",(br.left-wr.left));  l.setAttribute("y2",(br.top+br.height/2-wr.top));
+     l.setAttribute("stroke","#7dffb0"); l.setAttribute("stroke-width","2.5"); l.setAttribute("stroke-linecap","round");
+     svg.appendChild(l);
+   }
+   root.querySelectorAll(".lxl").forEach(function(el){
+     el.onclick=function(){
+       root.querySelectorAll(".lxl").forEach(function(x){ x.style.outline=""; });
+       el.style.outline="3px solid #ffd479"; el.style.outlineOffset="-3px"; sel=el;
+     };
+   });
+   root.querySelectorAll(".lxr").forEach(function(el){
+     el.onclick=function(){
+       if(!sel){ say("sad","先点左边一项。"); return; }
+       if(sel.dataset.done||el.dataset.done) return;
+       if(sel.dataset.i===el.dataset.i){
+         sel.style.opacity=".55"; el.style.opacity=".55";
+         sel.dataset.done=1; el.dataset.done=1;
+         line(sel, el); done++;
+         root.querySelector("#lxok").textContent=done;
+         say("happy","连对了。"+(C.items[+el.dataset.i].why||""));
+         sel.style.outline=""; sel=null;
+         if(done===C.items.length) say("happy","全部连通！");
+       } else {
+         el.classList.add("shake"); var e2=el;
+         setTimeout(function(){ e2.classList.remove("shake"); },360);
+         say("sad","这两项配不上，再看看。");
+       }
+     };
+   });
+ }},zhaocuo:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有待查条目。</div>";
+   var h='<div style="font-size:12px;color:#8a95a5;margin-bottom:8px">点你认为<b style="color:#ff8b8b">有错</b>的条目（可多选），然后点「检查」</div><div id="zcList">';
+   C.items.forEach(function(it,i){
+     h+='<div class="zci" data-i="'+i+'" style="background:#12233c;border:1.5px solid rgba(140,180,255,.22);border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;cursor:pointer;line-height:1.6">'+
+       '<span style="color:#8fb4e6;margin-right:6px">'+(i+1)+'.</span>'+esc(it.text)+'</div>';
+   });
+   h+='</div><div style="margin-top:10px"><button class="btn" id="zcChk">检查</button> <span id="zcRes" style="font-size:12.5px;margin-left:8px"></span></div>';
+   return h;
+ },mount:function(C,root){
+   var picked=new Set();
+   root.querySelectorAll(".zci").forEach(function(el){
+     el.onclick=function(){
+       var i=+el.dataset.i;
+       if(picked.has(i)){ picked.delete(i); el.style.borderColor="rgba(140,180,255,.22)"; el.style.background="#12233c"; }
+       else { picked.add(i); el.style.borderColor="#ff8b8b"; el.style.background="rgba(255,139,139,.12)"; }
+     };
+   });
+   root.querySelector("#zcChk").onclick=function(){
+     var right=0, miss=0, extra=0;
+     C.items.forEach(function(it,i){
+       var isW=(it.wrong==="\u662f"||it.wrong==="true"||it.wrong==="1");
+       var got=picked.has(i);
+       var el=root.querySelector('.zci[data-i="'+i+'"]');
+       if(isW){
+         if(got){ right++; el.style.borderColor="#7dffb0"; el.style.background="rgba(125,255,176,.14)"; }
+         else { miss++; el.style.borderColor="#ffd479"; el.style.background="rgba(255,212,121,.12)"; }
+       } else if(got){ extra++; el.style.borderColor="#8ec2ff"; el.style.background="rgba(142,194,255,.12)"; }
+       if(isW && it.why) el.title=it.why;
+     });
+     var r=root.querySelector("#zcRes");
+     if(miss===0&&extra===0){ r.style.color="#7dffb0"; r.textContent="全对！"+right+" 处错误都找到了。"; say("happy","全找出来了。"); }
+     else { r.style.color="#ff8b8b"; r.textContent="找到 "+right+" 处；漏了 "+miss+" 处，误判 "+extra+" 处（黄=漏、蓝=误）"; say("sad","再核一遍，别漏也别冤枉。"); }
+   };
+ }},guzhangshu:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有节点。第一个节点就是起点。</div>";
+   return '<div class="hud2" style="display:flex;gap:9px;margin-bottom:10px;font-size:12.5px">'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">第 <b id="gsStep">1</b> 步</span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">已花 <b id="gsCost">0</b> 分钟</span></div>'+
+     '<div id="gsBody"></div>';
+ },mount:function(C,root){
+   var step=0, cost=0, cur=0;
+   function parse(it){
+     var lines=(it.opts||"").split(/\n+/).filter(function(x){return x.trim()});
+     return lines.map(function(ln){
+       var p=ln.split(">").map(function(x){return x.trim()});
+       return { t:p[0]||"", next:(p[1]!==undefined?parseInt(p[1],10):-1), sec:parseInt(p[2]||"0",10), why:p[3]||"" };
+     });
+   }
+   function draw(){
+     var it=C.items[cur]; if(!it) return;
+     var opts=parse(it);
+     var b=root.querySelector("#gsBody");
+     var h='<div style="background:#12233c;border:1.5px solid rgba(140,180,255,.3);border-left:4px solid #ffd479;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.8;margin-bottom:12px">'+
+       '<b style="color:#ffd479">节点 '+(cur+1)+'：</b>'+esc(it.q)+'</div>';
+     if(!opts.length){
+       h+='<div style="background:rgba(125,255,176,.12);border-left:4px solid #7dffb0;border-radius:0 10px 10px 0;padding:12px 14px;font-size:13px;line-height:1.8">'+
+         '✔ 定位到这里。共走 '+step+' 步，花 '+cost+' 分钟。'+(it.why||"")+'</div>';
+       b.innerHTML=h; say("happy","定位完成，"+step+" 步、"+cost+" 分钟。");
+       return;
+     }
+     opts.forEach(function(o,k){
+       h+='<div class="gso" data-k="'+k+'" style="background:rgba(255,255,255,.06);border:1.5px solid rgba(140,180,255,.26);border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;cursor:pointer;display:flex;gap:10px;align-items:center">'+
+         '<span style="color:#8fb4e6;flex:1">'+esc(o.t)+'</span>'+
+         '<span style="font-size:11px;color:#ffd479;white-space:nowrap">这步花 '+o.sec+' 分钟</span></div>';
+     });
+     b.innerHTML=h;
+     b.querySelectorAll(".gso").forEach(function(el){
+       el.onclick=function(){
+         var o=opts[+el.dataset.k];
+         step++; cost+=o.sec;
+         root.querySelector("#gsStep").textContent=step+1;
+         root.querySelector("#gsCost").textContent=cost;
+         say("normal", o.why||("走："+o.t));
+         if(o.next>=0 && o.next<C.items.length){ cur=o.next; draw(); }
+         else { b.innerHTML='<div style="background:rgba(255,139,139,.12);border-left:4px solid #ff8b8b;padding:12px 14px;font-size:13px">这条路走不通，回头换个判断。</div>'; say("sad","这条路走不通。"); }
+       };
+     });
+   }
+   draw();
+ }},huakuai:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有判据。</div>";
+   var h='';
+   C.items.forEach(function(it,i){
+     var mn=parseFloat(it.min||"0"), mx=parseFloat(it.max||"100");
+     var v=((mn+mx)/2).toFixed(1);
+     h+='<div style="background:#12233c;border:1px solid rgba(140,180,255,.22);border-radius:10px;padding:12px;margin-bottom:10px">'+
+       '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px">'+
+       '<b style="color:#eaf1ff">'+(i+1)+'. '+esc(it.name||"")+'</b>'+
+       '<span style="color:#ffd479">当前 <b class="hv" data-i="'+i+'">'+v+'</b> '+esc(it.unit||"")+'</span></div>'+
+       '<input type="range" min="'+mn+'" max="'+mx+'" step="0.1" value="'+v+'" data-i="'+i+'" style="width:100%">'+
+       '<div style="display:flex;justify-content:space-between;font-size:11px;color:#6b82a6;margin-top:3px"><span>'+mn+'</span><span>'+mx+'</span></div>'+
+       '<div style="margin-top:8px"><button class="btn sm" data-chk="'+i+'">对答案</button> <span data-res="'+i+'" style="font-size:12px"></span></div></div>';
+   });
+   return h;
+ },mount:function(C,root){
+   var ok=new Set();
+   root.querySelectorAll('input[type=range]').forEach(function(r){
+     r.oninput=function(){
+       var e=root.querySelector('.hv[data-i="'+r.dataset.i+'"]'); if(e) e.textContent=(+r.value).toFixed(1);
+     };
+   });
+   root.querySelectorAll("[data-chk]").forEach(function(b){
+     b.onclick=function(){
+       var i=+b.dataset.chk, it=C.items[i];
+       var r=root.querySelector('input[data-i="'+i+'"]');
+       var v=parseFloat(r.value);
+       var lo=parseFloat(it.okMin), hi=parseFloat(it.okMax);
+       var res=root.querySelector('[data-res="'+i+'"]');
+       if(v>=lo && v<=hi){
+         r.style.accentColor="#7dffb0"; res.style.color="#7dffb0";
+         res.textContent="✔ 合格（"+lo+"–"+hi+" "+esc(it.unit||"")+"）"+(it.why?"　依据："+it.why:"");
+         if(!ok.has(i)){ ok.add(i); }
+         say("happy","合格："+it.name+" "+v);
+         if(ok.size===C.items.length) setTimeout(function(){ say("happy","全部合格，可以往下走了。"); },400);
+       } else {
+         r.style.accentColor="#ff8b8b"; res.style.color="#ff8b8b";
+         res.textContent="✘ 不在合格区（要求 "+lo+"–"+hi+"）"+(it.why?"　依据："+it.why:"");
+         say("sad","不合格，再调。");
+       }
+     };
+   });
+ }},match:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有连线条目。</div>";
+   var h='<div style="font-size:12px;color:#8a95a5;margin-bottom:8px">先点左边一项，再点右边与它配对的项</div>'+
+     '<div id="lxWrap" style="position:relative;display:grid;grid-template-columns:1fr 90px 1fr;gap:0;align-items:start">'+
+     '<div id="lxL" style="display:flex;flex-direction:column;gap:8px">';
+   C.items.forEach(function(it,i){ h+='<div class="lxl" data-i="'+i+'" style="background:linear-gradient(150deg,#2f6fd0,#1d4f9e);border:1.5px solid rgba(140,180,255,.45);border-radius:9px;padding:10px;font-size:12.5px;cursor:pointer;text-align:right">'+esc(it.l)+'</div>'; });
+   h+='</div><div></div><div id="lxR" style="display:flex;flex-direction:column;gap:8px">';
+   var ord=C.items.map(function(_,i){return i}); shuf(ord);
+   ord.forEach(function(i){ h+='<div class="lxr" data-i="'+i+'" style="background:rgba(255,212,121,.9);color:#4a3400;border:1.5px solid rgba(255,212,121,.7);border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer">'+esc(C.items[i].r)+'</div>'; });
+   h+='</div><svg id="lxSvg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></svg></div>'+
+     '<div style="margin-top:12px;font-size:12.5px">已连 <b id="lxok" style="color:#7dffb0">0</b> / '+C.items.length+'</div>';
+   return h;
+ },mount:function(C,root){
+   var wrap=root.querySelector("#lxWrap"), svg=root.querySelector("#lxSvg");
+   var sel=null, done=0;
+   function line(a,b){
+     var wr=wrap.getBoundingClientRect(), ar=a.getBoundingClientRect(), br=b.getBoundingClientRect();
+     var l=document.createElementNS("http://www.w3.org/2000/svg","line");
+     l.setAttribute("x1", (ar.right-wr.left)); l.setAttribute("y1",(ar.top+ar.height/2-wr.top));
+     l.setAttribute("x2",(br.left-wr.left));  l.setAttribute("y2",(br.top+br.height/2-wr.top));
+     l.setAttribute("stroke","#7dffb0"); l.setAttribute("stroke-width","2.5"); l.setAttribute("stroke-linecap","round");
+     svg.appendChild(l);
+   }
+   root.querySelectorAll(".lxl").forEach(function(el){
+     el.onclick=function(){
+       root.querySelectorAll(".lxl").forEach(function(x){ x.style.outline=""; });
+       el.style.outline="3px solid #ffd479"; el.style.outlineOffset="-3px"; sel=el;
+     };
+   });
+   root.querySelectorAll(".lxr").forEach(function(el){
+     el.onclick=function(){
+       if(!sel){ say("sad","先点左边一项。"); return; }
+       if(sel.dataset.done||el.dataset.done) return;
+       if(sel.dataset.i===el.dataset.i){
+         sel.style.opacity=".55"; el.style.opacity=".55";
+         sel.dataset.done=1; el.dataset.done=1;
+         line(sel, el); done++;
+         root.querySelector("#lxok").textContent=done;
+         say("happy","连对了。"+(C.items[+el.dataset.i].why||""));
+         sel.style.outline=""; sel=null;
+         if(done===C.items.length) say("happy","全部连通！");
+       } else {
+         el.classList.add("shake"); var e2=el;
+         setTimeout(function(){ e2.classList.remove("shake"); },360);
+         say("sad","这两项配不上，再看看。");
+       }
+     };
+   });
+ }},finderr:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有待查条目。</div>";
+   var h='<div style="font-size:12px;color:#8a95a5;margin-bottom:8px">点你认为<b style="color:#ff8b8b">有错</b>的条目（可多选），然后点「检查」</div><div id="zcList">';
+   C.items.forEach(function(it,i){
+     h+='<div class="zci" data-i="'+i+'" style="background:#12233c;border:1.5px solid rgba(140,180,255,.22);border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;cursor:pointer;line-height:1.6">'+
+       '<span style="color:#8fb4e6;margin-right:6px">'+(i+1)+'.</span>'+esc(it.text)+'</div>';
+   });
+   h+='</div><div style="margin-top:10px"><button class="btn" id="zcChk">检查</button> <span id="zcRes" style="font-size:12.5px;margin-left:8px"></span></div>';
+   return h;
+ },mount:function(C,root){
+   var picked=new Set();
+   root.querySelectorAll(".zci").forEach(function(el){
+     el.onclick=function(){
+       var i=+el.dataset.i;
+       if(picked.has(i)){ picked.delete(i); el.style.borderColor="rgba(140,180,255,.22)"; el.style.background="#12233c"; }
+       else { picked.add(i); el.style.borderColor="#ff8b8b"; el.style.background="rgba(255,139,139,.12)"; }
+     };
+   });
+   root.querySelector("#zcChk").onclick=function(){
+     var right=0, miss=0, extra=0;
+     C.items.forEach(function(it,i){
+       var isW=(it.wrong==="\u662f"||it.wrong==="true"||it.wrong==="1");
+       var got=picked.has(i);
+       var el=root.querySelector('.zci[data-i="'+i+'"]');
+       if(isW){
+         if(got){ right++; el.style.borderColor="#7dffb0"; el.style.background="rgba(125,255,176,.14)"; }
+         else { miss++; el.style.borderColor="#ffd479"; el.style.background="rgba(255,212,121,.12)"; }
+       } else if(got){ extra++; el.style.borderColor="#8ec2ff"; el.style.background="rgba(142,194,255,.12)"; }
+       if(isW && it.why) el.title=it.why;
+     });
+     var r=root.querySelector("#zcRes");
+     if(miss===0&&extra===0){ r.style.color="#7dffb0"; r.textContent="全对！"+right+" 处错误都找到了。"; say("happy","全找出来了。"); }
+     else { r.style.color="#ff8b8b"; r.textContent="找到 "+right+" 处；漏了 "+miss+" 处，误判 "+extra+" 处（黄=漏、蓝=误）"; say("sad","再核一遍，别漏也别冤枉。"); }
+   };
+ }},faulttree:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有节点。第一个节点就是起点。</div>";
+   return '<div class="hud2" style="display:flex;gap:9px;margin-bottom:10px;font-size:12.5px">'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">第 <b id="gsStep">1</b> 步</span>'+
+     '<span style="background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);border-radius:9px;padding:5px 12px">已花 <b id="gsCost">0</b> 分钟</span></div>'+
+     '<div id="gsBody"></div>';
+ },mount:function(C,root){
+   var step=0, cost=0, cur=0;
+   function parse(it){
+     var lines=(it.opts||"").split(/\n+/).filter(function(x){return x.trim()});
+     return lines.map(function(ln){
+       var p=ln.split(">").map(function(x){return x.trim()});
+       return { t:p[0]||"", next:(p[1]!==undefined?parseInt(p[1],10):-1), sec:parseInt(p[2]||"0",10), why:p[3]||"" };
+     });
+   }
+   function draw(){
+     var it=C.items[cur]; if(!it) return;
+     var opts=parse(it);
+     var b=root.querySelector("#gsBody");
+     var h='<div style="background:#12233c;border:1.5px solid rgba(140,180,255,.3);border-left:4px solid #ffd479;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.8;margin-bottom:12px">'+
+       '<b style="color:#ffd479">节点 '+(cur+1)+'：</b>'+esc(it.q)+'</div>';
+     if(!opts.length){
+       h+='<div style="background:rgba(125,255,176,.12);border-left:4px solid #7dffb0;border-radius:0 10px 10px 0;padding:12px 14px;font-size:13px;line-height:1.8">'+
+         '✔ 定位到这里。共走 '+step+' 步，花 '+cost+' 分钟。'+(it.why||"")+'</div>';
+       b.innerHTML=h; say("happy","定位完成，"+step+" 步、"+cost+" 分钟。");
+       return;
+     }
+     opts.forEach(function(o,k){
+       h+='<div class="gso" data-k="'+k+'" style="background:rgba(255,255,255,.06);border:1.5px solid rgba(140,180,255,.26);border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;cursor:pointer;display:flex;gap:10px;align-items:center">'+
+         '<span style="color:#8fb4e6;flex:1">'+esc(o.t)+'</span>'+
+         '<span style="font-size:11px;color:#ffd479;white-space:nowrap">这步花 '+o.sec+' 分钟</span></div>';
+     });
+     b.innerHTML=h;
+     b.querySelectorAll(".gso").forEach(function(el){
+       el.onclick=function(){
+         var o=opts[+el.dataset.k];
+         step++; cost+=o.sec;
+         root.querySelector("#gsStep").textContent=step+1;
+         root.querySelector("#gsCost").textContent=cost;
+         say("normal", o.why||("走："+o.t));
+         if(o.next>=0 && o.next<C.items.length){ cur=o.next; draw(); }
+         else { b.innerHTML='<div style="background:rgba(255,139,139,.12);border-left:4px solid #ff8b8b;padding:12px 14px;font-size:13px">这条路走不通，回头换个判断。</div>'; say("sad","这条路走不通。"); }
+       };
+     });
+   }
+   draw();
+ }},slider:{html:function(C){
+   if(!C.items.length) return "<div style='padding:20px;color:#7d94b5'>还没有判据。</div>";
+   var h='';
+   C.items.forEach(function(it,i){
+     var mn=parseFloat(it.min||"0"), mx=parseFloat(it.max||"100");
+     var v=((mn+mx)/2).toFixed(1);
+     h+='<div style="background:#12233c;border:1px solid rgba(140,180,255,.22);border-radius:10px;padding:12px;margin-bottom:10px">'+
+       '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px">'+
+       '<b style="color:#eaf1ff">'+(i+1)+'. '+esc(it.name||"")+'</b>'+
+       '<span style="color:#ffd479">当前 <b class="hv" data-i="'+i+'">'+v+'</b> '+esc(it.unit||"")+'</span></div>'+
+       '<input type="range" min="'+mn+'" max="'+mx+'" step="0.1" value="'+v+'" data-i="'+i+'" style="width:100%">'+
+       '<div style="display:flex;justify-content:space-between;font-size:11px;color:#6b82a6;margin-top:3px"><span>'+mn+'</span><span>'+mx+'</span></div>'+
+       '<div style="margin-top:8px"><button class="btn sm" data-chk="'+i+'">对答案</button> <span data-res="'+i+'" style="font-size:12px"></span></div></div>';
+   });
+   return h;
+ },mount:function(C,root){
+   var ok=new Set();
+   root.querySelectorAll('input[type=range]').forEach(function(r){
+     r.oninput=function(){
+       var e=root.querySelector('.hv[data-i="'+r.dataset.i+'"]'); if(e) e.textContent=(+r.value).toFixed(1);
+     };
+   });
+   root.querySelectorAll("[data-chk]").forEach(function(b){
+     b.onclick=function(){
+       var i=+b.dataset.chk, it=C.items[i];
+       var r=root.querySelector('input[data-i="'+i+'"]');
+       var v=parseFloat(r.value);
+       var lo=parseFloat(it.okMin), hi=parseFloat(it.okMax);
+       var res=root.querySelector('[data-res="'+i+'"]');
+       if(v>=lo && v<=hi){
+         r.style.accentColor="#7dffb0"; res.style.color="#7dffb0";
+         res.textContent="✔ 合格（"+lo+"–"+hi+" "+esc(it.unit||"")+"）"+(it.why?"　依据："+it.why:"");
+         if(!ok.has(i)){ ok.add(i); }
+         say("happy","合格："+it.name+" "+v);
+         if(ok.size===C.items.length) setTimeout(function(){ say("happy","全部合格，可以往下走了。"); },400);
+       } else {
+         r.style.accentColor="#ff8b8b"; res.style.color="#ff8b8b";
+         res.textContent="✘ 不在合格区（要求 "+lo+"–"+hi+"）"+(it.why?"　依据："+it.why:"");
+         say("sad","不合格，再调。");
+       }
+     };
+   });
+ }}};var esc=function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;")};(function(){var C=window.__CFG__;var box=document.getElementById("pv");box.innerHTML=ENGINE[C.type].html(C);if(ENGINE[C.type].mount)ENGINE[C.type].mount(C,box);say("normal","按要求操作，注意判据。");})();</script></body></html>
