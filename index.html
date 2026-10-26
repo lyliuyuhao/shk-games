@@ -3,119 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>《电力系统二次回路》教学游戏中心</title>
+<title>《电力系统二次回路》教学游戏</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#08152b;color:#eaf1ff;min-height:100vh;overflow-x:hidden}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(circle at 15% 8%,rgba(58,130,255,.20),transparent 40%),
-             radial-gradient(circle at 88% 82%,rgba(255,168,60,.14),transparent 44%)}
-.wrap{position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:26px 16px 70px}
-header{text-align:center;margin-bottom:20px}
-h1{font-size:27px;letter-spacing:1.5px;background:linear-gradient(92deg,#8ec2ff,#ffd479 55%,#ff9e7d);
-  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 12px rgba(120,180,255,.4))}
-.sub{font-size:13.5px;color:#8aa6cd;margin-top:9px;line-height:1.8}
-.stat{display:inline-flex;gap:18px;margin-top:14px;font-size:12.5px;color:#9db6d8;flex-wrap:wrap;justify-content:center}
-.stat b{color:#ffd479;font-size:15px}
-h2{font-size:16.5px;margin:30px 0 14px;padding-left:11px;border-left:4px solid #ffd479;color:#cfe0f8;letter-spacing:.6px}
-h2 span{font-size:12.5px;color:#7d94b5;font-weight:400;margin-left:8px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(246px,1fr));gap:13px}
-a.card{display:block;text-decoration:none;color:inherit;background:linear-gradient(160deg,#16294a,#0f1f38);
-  border:1.5px solid rgba(120,170,255,.22);border-radius:14px;padding:15px 16px;
-  transition:transform .18s,box-shadow .18s,border-color .18s;position:relative;overflow:hidden}
-a.card:before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.07),transparent 52%);pointer-events:none}
-a.card:hover{transform:translateY(-4px);border-color:#7fb6ff;box-shadow:0 12px 30px rgba(60,130,255,.34)}
-.tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:6px;margin-bottom:9px;
-  background:rgba(127,182,255,.16);border:1px solid rgba(127,182,255,.34);color:#a9c8f0;letter-spacing:.4px}
-.tag.new{background:rgba(255,212,121,.16);border-color:rgba(255,212,121,.45);color:#ffd479;font-weight:700}
-.t{font-size:14.5px;font-weight:700;line-height:1.45;margin-bottom:6px;color:#eaf1ff}
-.d{font-size:12px;color:#8aa6cd;line-height:1.65}
-footer{text-align:center;font-size:11.5px;color:#6b82a6;margin-top:34px;line-height:1.9;
-  border-top:1px dashed rgba(120,170,255,.2);padding-top:16px}
-footer a{color:#8ec2ff;text-decoration:none}
-.tip{background:rgba(255,212,121,.09);border-left:3px solid #ffd479;border-radius:0 8px 8px 0;
-  padding:10px 14px;font-size:12.5px;color:#d8c9a0;line-height:1.8;margin-bottom:8px}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#08152b;color:#eaf1ff;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 18% 12%,rgba(58,130,255,.22),transparent 42%),
+             radial-gradient(circle at 84% 84%,rgba(255,168,60,.16),transparent 46%)}
+.wrap{position:relative;z-index:2;max-width:720px;padding:40px 22px;text-align:center}
+h1{font-size:30px;letter-spacing:1.6px;line-height:1.4;
+  background:linear-gradient(92deg,#8ec2ff,#ffd479 58%,#ff9e7d);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 14px rgba(120,180,255,.42))}
+.sub{font-size:14px;color:#8aa6cd;margin-top:14px;line-height:1.9}
+.big{display:inline-flex;align-items:center;gap:10px;margin-top:32px;text-decoration:none;
+  font-size:18px;font-weight:800;color:#08152b;letter-spacing:.6px;
+  background:linear-gradient(96deg,#ffd479,#ffb454);padding:18px 40px;border-radius:14px;
+  box-shadow:0 14px 38px rgba(255,180,84,.36);transition:.18s}
+.big:hover{transform:translateY(-3px);box-shadow:0 20px 46px rgba(255,180,84,.5)}
+.card{background:linear-gradient(160deg,#16294a,#0f1f38);border:1.5px solid rgba(120,170,255,.24);
+  border-radius:14px;padding:20px 22px;margin-top:34px;text-align:left}
+.card h2{font-size:14px;color:#ffd479;letter-spacing:.6px;margin-bottom:12px}
+.card ol{margin:0;padding-left:20px;font-size:13px;color:#a9c2e2;line-height:2.1}
+.card ol b{color:#eaf1ff}
+.note{font-size:12px;color:#7d94b5;margin-top:22px;line-height:1.9}
+.note b{color:#ffd479}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-  <h1>《电力系统二次回路》教学游戏中心</h1>
-  <div class="sub">共 28 款互动游戏 ｜ 玩法：连连看 · 翻牌记忆 · 打地鼠 · 连线配对 · 拖拽拼装 · 找错 · 故障树 · 数值调节</div>
-  <div class="stat"><span>点卡片直接玩</span><span>手机可用</span><span>无需登录</span></div>
-</header>
+  <h1>《电力系统二次回路》<br>教学游戏</h1>
+  <div class="sub">游戏不再预置，全部由老师用配置器现做现出。<br>选玩法 → 交资料 → 预览 → 导出一个单文件，可脱机投屏，也可挂到课程平台。</div>
 
-<div class="tip" style="background:rgba(125,255,176,.10);border-left-color:#7dffb0;color:#c8f0d8;margin-bottom:14px">
-  <b>老师专用：</b><a href="editor.html" style="color:#7dffb0;font-weight:700">🛠 打开教学游戏配置器</a> —— 选玩法 → 传图 → 图上打点 → 实时预览 → 导出单文件 HTML。<br>
-  导出的 HTML 发给我，我推到线上并挂到课程平台。配置也可存成 JSON，下次接着改。
-</div>
-<div class="tip">如显示空白或报错，请按 <b>Ctrl + F5</b> 强制刷新一次（浏览器可能缓存了旧的 404 页面）。</div>
+  <a class="big" href="editor.html">🛠 打开教学游戏配置器</a>
 
-<h2>本轮新增 · 三种经典玩法<span>3D 翻转 · 粒子爆开 · 连击 · 星级</span></h2>
-<div class="grid">
-  <a class="card" href="llk-1-huilu-bianhao.html"><span class="tag new">连连看</span>
-    <div class="t">回路编号连连看</div><div class="d">项目1 · A411↔电流回路A相、N600↔一点接地。路径最多拐两弯</div></a>
-  <a class="card" href="llk-2-huganqi.html"><span class="tag new">连连看</span>
-    <div class="t">互感器参数连连看</div><div class="d">项目2 · 5P30↔保护级、0.2S↔计量级、30VA↔额定容量</div></a>
-  <a class="card" href="llk-5-panju-shuzhi.html"><span class="tag new">连连看</span>
-    <div class="t">调试判据连连看</div><div class="d">项目5 · ≤3%↔保护压降、≤2%↔母线纹波</div></a>
-  <a class="card" href="llk-7-quexian.html"><span class="tag new">连连看</span>
-    <div class="t">缺陷定性连连看</div><div class="d">项目7 · 危急／严重／一般三类定性</div></a>
-  <a class="card" href="fp-5-panju.html"><span class="tag new">翻牌记忆</span>
-    <div class="t">调试判据翻牌记忆</div><div class="d">项目5 · 10 对判据、20 张牌，真 3D 翻转 + 粒子</div></a>
-  <a class="card" href="fp-1-bianhao.html"><span class="tag new">翻牌记忆</span>
-    <div class="t">回路编号翻牌记忆</div><div class="d">项目1 · 编号↔功能配对记忆</div></a>
-  <a class="card" href="dadi-7-quexian.html"><span class="tag new">打地鼠</span>
-    <div class="t">缺陷定级打地鼠</div><div class="d">项目7 · 含「采样偏小→是表坏了」这类典型错判</div></a>
-  <a class="card" href="dadi-5-panju.html"><span class="tag new">打地鼠</span>
-    <div class="t">判据真假打地鼠</div><div class="d">项目5 · 含「拿10MΩ判支路」等错项</div></a>
-</div>
+  <div class="card">
+    <h2>怎么用</h2>
+    <ol>
+      <li><b>选玩法</b> —— 13 种可用，每种都写明「需要你提供什么资料」</li>
+      <li><b>交资料</b> —— 传图（自动内嵌）／在图上打点／批量粘贴文字</li>
+      <li><b>预览</b> —— 学生视角试玩一遍</li>
+      <li><b>导出</b> —— 得到单文件 HTML，发我即可上线挂平台</li>
+    </ol>
+  </div>
 
-<h2>项目5 二次回路调试<span>连线／拼装／找错／故障树／滑块</span></h2>
-<div class="grid">
-  <a class="card" href="p5-jueyuan-huakuai.html"><span class="tag">滑块调节</span>
-    <div class="t">绝缘与接地 · 门槛值调一调</div><div class="d">5.2 · 拖滑块进合格区，越界报红</div></a>
-  <a class="card" href="p5-tongdian-guzhang.html"><span class="tag">故障树</span>
-    <div class="t">升流异常逐层定位</div><div class="d">5.3 · 每选项标「这步花多久」，走错白跑</div></a>
-  <a class="card" href="p5-dianya-zhaocuo.html"><span class="tag">找错</span>
-    <div class="t">通压核相图面找错</div><div class="d">5.4 · 9 条描述藏 5 处错</div></a>
-  <a class="card" href="p5-kongzhi-lianxian.html"><span class="tag">连线配对</span>
-    <div class="t">控制回路判据与数值连线</div><div class="d">5.5 · 拖线配对，连线流动动画</div></a>
-  <a class="card" href="p5-xinhao-zhaocuo.html"><span class="tag">找错</span>
-    <div class="t">信号回路后台对点找错</div><div class="d">5.6 · 8 条记录藏 4 处错</div></a>
-  <a class="card" href="p5-bisuo-pinZhuang.html"><span class="tag">拖拽拼装</span>
-    <div class="t">闭锁条件装到正确位置</div><div class="d">5.7 · 6 个部件拖回空位，拖对吸附</div></a>
-  <a class="card" href="p5-caozuodianyuan-huakuai.html"><span class="tag">滑块调节</span>
-    <div class="t">操作电源限值调一调</div><div class="d">5.8 · 纹波／浮充／核容门槛</div></a>
-  <a class="card" href="p5-dianliu-guzhangshu.html"><span class="tag">故障树</span>
-    <div class="t">升流异常逐层定位（完整版）</div><div class="d">5.3 · 全部分支</div></a>
-</div>
-
-<h2>项目1–4 与 6–8<span>识图／互感器／设计／配线／运维／排故／虚回路</span></h2>
-<div class="grid">
-  <a class="card" href="p1-tongzhipai-peidui.html"><span class="tag">连线配对</span>
-    <div class="t">端子排编号配对</div><div class="d">1.4 识读端子排图与回路编号</div></a>
-  <a class="card" href="p1-tushi-bufu-zhaocuo.html"><span class="tag">找错</span>
-    <div class="t">图实不符找错</div><div class="d">1.6 二次回路查线、对线</div></a>
-  <a class="card" href="p2-bianbi-jixing.html"><span class="tag">连线配对</span>
-    <div class="t">变比与极性判断</div><div class="d">2.2 读铭牌与确定变比</div></a>
-  <a class="card" href="p3-kongzhi-xuanxing.html"><span class="tag">连线配对</span>
-    <div class="t">控制回路选型</div><div class="d">3.5 设计控制回路</div></a>
-  <a class="card" href="p4-jiexian-shunxu.html"><span class="tag">排序</span>
-    <div class="t">接线顺序排序</div><div class="d">4.5 二次接线（屏内、屏外）</div></a>
-  <a class="card" href="p6-fancuo-zhaolou.html"><span class="tag">找错</span>
-    <div class="t">反措二十条找漏</div><div class="d">6.4 二次回路反措执行与专项检查</div></a>
-  <a class="card" href="p7-tiaozha-shunxu.html"><span class="tag">故障树</span>
-    <div class="t">跳闸失败原因排序</div><div class="d">7.7 控制回路故障的查找与处理</div></a>
-  <a class="card" href="p8-xuduizi-peidui.html"><span class="tag">连线配对</span>
-    <div class="t">虚端子配对</div><div class="d">8.4 虚回路的配置与核对</div></a>
-</div>
-
-<footer>
-  《电力系统二次回路》课程组 ｜ 教学练习用，不作考核依据<br>
-  内容依据：出版稿《二次回路设计与安装调试》＋《怎样看二次回路》51 节教程<br>
-  玩法参考：<a href="https://github.com/hackclub/hackclub/tree/main/workshops/memory%20game" target="_blank" rel="noopener">hackclub memory game workshop</a>（3D 翻转做法）；粒子效果自写内联，不依赖 CDN
-</footer>
+  <div class="note">
+    如页面显示异常，请按 <b>Ctrl + F5</b> 强制刷新一次。<br>
+    教学练习用，不作考核依据。
+  </div>
 </div>
 </body>
 </html>
