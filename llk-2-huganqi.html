@@ -1,0 +1,305 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>互感器参数连连看</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;min-height:100vh;
+  background:linear-gradient(135deg,#0a1a3c 0%,#12305f 40%,#0d2447 100%);
+  color:#e8eefb;overflow-x:hidden;position:relative}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 20% 10%,rgba(66,140,255,.16),transparent 42%),
+             radial-gradient(circle at 84% 78%,rgba(255,170,60,.12),transparent 46%)}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 14px 60px;position:relative;z-index:2}
+header{text-align:center;margin-bottom:10px}
+h1{font-size:22px;letter-spacing:1px;background:linear-gradient(90deg,#7fb6ff,#ffd479);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:12.5px;color:#8fa9d4;margin-top:5px}
+.hud{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:12px 0}
+.hud div{background:rgba(255,255,255,.07);border:1px solid rgba(140,180,255,.22);
+  border-radius:10px;padding:6px 14px;font-size:13px;backdrop-filter:blur(4px)}
+.hud b{color:#ffd479;font-size:15px}
+.hud .warn b{color:#ff7a7a}
+#board{position:relative;margin:0 auto;display:grid;gap:6px;justify-content:center}
+#svg{position:absolute;inset:0;pointer-events:none;z-index:9;overflow:visible}
+#svg path{fill:none;stroke:#ffd479;stroke-width:5;stroke-linecap:round;
+  filter:drop-shadow(0 0 8px rgba(255,212,121,.9));stroke-dasharray:1000;stroke-dashoffset:1000;
+  animation:draw .28s linear forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.tile{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:11px;cursor:pointer;font-size:11.5px;line-height:1.28;padding:4px 3px;
+  background:linear-gradient(160deg,#22406e,#16294a);border:1.5px solid rgba(120,170,255,.35);
+  color:#dce8fb;transition:transform .14s,box-shadow .14s,border-color .14s;overflow:hidden}
+.tile:before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.14),transparent 55%);pointer-events:none}
+.tile:hover{transform:translateY(-3px) scale(1.04);border-color:#7fb6ff;box-shadow:0 6px 18px rgba(60,130,255,.4);z-index:5}
+.tile.sel{border-color:#ffd479;box-shadow:0 0 0 3px rgba(255,212,121,.45),0 6px 20px rgba(255,180,60,.5);
+  transform:translateY(-3px) scale(1.06);background:linear-gradient(160deg,#3a4f7a,#243a5e)}
+.tile.gone{visibility:hidden;pointer-events:none}
+.tile.pop{animation:pop .3s forwards}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.28);box-shadow:0 0 26px rgba(255,212,121,.95)}100%{transform:scale(0);opacity:0}}
+.tile.bad{animation:bad .32s}
+@keyframes bad{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px);border-color:#ff6b6b}
+  60%{transform:translateX(6px);border-color:#ff6b6b}}
+.tile.hint{animation:hint 1s ease-in-out 2}
+@keyframes hint{0%,100%{box-shadow:0 0 0 0 rgba(120,255,180,0)}50%{box-shadow:0 0 0 6px rgba(120,255,180,.7)}}
+.acts{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+button{font-family:inherit;font-size:13.5px;padding:9px 20px;border-radius:9px;cursor:pointer;
+  border:1.5px solid rgba(140,180,255,.4);background:rgba(255,255,255,.08);color:#dce8fb;transition:.16s}
+button:hover{background:rgba(127,182,255,.22);border-color:#7fb6ff;transform:translateY(-2px)}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.over{position:fixed;inset:0;background:rgba(5,12,26,.88);display:none;align-items:center;justify-content:center;z-index:99;backdrop-filter:blur(6px)}
+.over.show{display:flex;animation:fadein .3s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.panel{background:linear-gradient(160deg,#1b3355,#12233d);border:1.5px solid rgba(140,180,255,.3);
+  border-radius:18px;padding:30px 40px;text-align:center;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.panel h2{font-size:22px;margin-bottom:12px;background:linear-gradient(90deg,#7fb6ff,#ffd479);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.stars{font-size:34px;letter-spacing:6px;margin:10px 0;color:#ffd479}
+.stars .off{color:#3a4a63}
+.panel p{font-size:13.5px;color:#a8c0e0;line-height:1.9}
+#toast{position:fixed;left:50%;top:18%;transform:translateX(-50%) scale(.8);opacity:0;
+  font-size:26px;font-weight:700;pointer-events:none;z-index:100;
+  color:#ffd479;text-shadow:0 0 22px rgba(255,180,60,.9)}
+#toast.show{animation:toast .8s}
+@keyframes toast{0%{opacity:0;transform:translateX(-50%) scale(.7)}30%{opacity:1;transform:translateX(-50%) scale(1.15)}
+  70%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1.3)}}
+.note{text-align:center;font-size:11.5px;color:#6b82a6;margin-top:22px;line-height:1.7}
+</style></head><body>
+<div class="wrap">
+<header><h1>互感器参数连连看</h1><div class="sub">项目2 互感器选型 ｜ 2.2 读铭牌与确定变比 ｜ 连连看（约 5 分钟）</div></header>
+<div class="hud">
+  <div>剩余 <b id="left">0</b> 对</div>
+  <div>得分 <b id="score">0</b></div>
+  <div id="comboBox" style="display:none">连击 <b id="combo">0</b></div>
+  <div class="warn">时间 <b id="time">00:60</b></div>
+</div>
+<div id="board"><svg id="svg"></svg></div>
+<div class="acts">
+  <button id="hintBtn">提示（扣 20 分）</button>
+  <button id="shuffleBtn">洗牌</button>
+  <button id="againBtn">重来</button>
+</div>
+<div class="note">[AI起草·待人工核定] 判据依据：出版稿《二次回路设计与安装调试》项目2 任务 2.2–2.5<br>玩法：点两个互相匹配的方块，路径最多拐两个弯即可连通消除。连得越快，连击越高。</div>
+</div>
+<div class="over" id="over"><div class="panel">
+  <h2 id="overTitle">过关</h2>
+  <div class="stars" id="stars"></div>
+  <p id="overMsg"></p>
+  <button onclick="location.reload()" style="margin-top:16px">再玩一次</button>
+</div></div>
+<div id="toast"></div>
+<script>
+var PAIRS = [{"a": "400/5A", "b": "变比：一次 400A 对应二次 5A", "why": "变比决定二次电流量值", "src": "出版稿任务2.2"}, {"a": "5P30", "b": "保护级：30 倍额定电流下误差 5%", "why": "P 级按复合误差定义，故障时不饱和", "src": "出版稿任务2.3"}, {"a": "0.2S", "b": "计量级：带 S 表示宽量程高精度", "why": "S 级在 1%–120% 范围内保精度", "src": "出版稿任务2.3"}, {"a": "30VA", "b": "额定二次容量", "why": "实际负担不得超过它", "src": "DL/T 5136-2012"}, {"a": "减极性", "b": "P1 进 P2 出，S1 为极性端", "why": "极性反了保护误动", "src": "GB/T 50976-2014"}, {"a": "10% 误差", "b": "保护用互感器阻抗验算要求", "why": "按厂家资料验算", "src": "DL/T 995-2016 5.3.1.2"}, {"a": "180m·4mm²", "b": "二次电缆长度与截面", "why": "决定电缆电阻，直接影响二次负担", "src": "工程参数"}, {"a": "星形接线", "b": "三相电流全取", "why": "保护要三相电流", "src": "出版稿任务2.5"}, {"a": "不完全星形", "b": "只取两相电流", "why": "适用场合不同", "src": "出版稿任务2.5"}, {"a": "二次负担", "b": "电缆电阻＋装置阻抗＋接触电阻", "why": "只计二次回路，不含 CT 直阻", "src": "出版稿任务2.3"}];   // [{a:"", b:"", why:"", src:""}]
+var COLS = 5, ROWS = 2, TIME = 180;
+var grid = [], tiles = {}, sel = null, left = 0, score = 0, combo = 0, timeLeft = TIME, timer = null, busy = false;
+
+var $ = function (s) { return document.querySelector(s); };
+function beep(kind) {
+  try {
+    var C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    window.__AC = window.__AC || new C(); var ac = window.__AC;
+    var o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+    var f = { click: 620, ok: 880, combo: 1180, bad: 170, win: 1320 }[kind] || 600;
+    o.type = kind === "bad" ? "square" : "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(.001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(kind === "bad" ? .1 : .07, ac.currentTime + .01);
+    g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + (kind === "bad" ? .28 : .2));
+    o.start(); o.stop(ac.currentTime + .3);
+  } catch (e) { }
+}
+function toast(t) { var e = $("#toast"); e.textContent = t; e.classList.remove("show"); void e.offsetWidth; e.classList.add("show"); }
+
+function init() {
+  // 生成配对牌堆
+  var deck = [];
+  PAIRS.forEach(function (p, i) {
+    deck.push({ pid: i, side: 0, text: p.a });
+    deck.push({ pid: i, side: 1, text: p.b });
+  });
+  shuffleArr(deck);
+  ROWS = Math.ceil(deck.length / COLS);
+  left = PAIRS.length;
+  grid = [];
+  for (var r = 0; r < ROWS + 2; r++) { grid[r] = []; for (var c = 0; c < COLS + 2; c++) grid[r][c] = (r > 0 && r <= ROWS && c > 0 && c <= COLS) ? 1 : 0; }
+  // 填充
+  var k = 0;
+  for (var rr = 1; rr <= ROWS; rr++) for (var cc = 1; cc <= COLS; cc++) {
+    if (k < deck.length) { tiles[rr + "_" + cc] = { r: rr, c: cc, d: deck[k], alive: true }; k++; }
+    else { grid[rr][cc] = 0; }
+  }
+  draw();
+  $("#left").textContent = left;
+  startTimer();
+}
+function shuffleArr(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+function draw() {
+  var b = $("#board");
+  b.style.gridTemplateColumns = "repeat(" + COLS + ",minmax(0,1fr))";
+  b.style.width = "min(94vw," + (COLS * 118) + "px)";
+  [...b.querySelectorAll(".tile")].forEach(function (e) { e.remove(); });
+  var svg = $("#svg"); svg.innerHTML = "";
+  Object.keys(tiles).forEach(function (key) {
+    var t = tiles[key];
+    var d = document.createElement("div");
+    d.className = "tile" + (t.alive ? "" : " gone");
+    d.dataset.key = key;
+    d.textContent = t.d.text;
+    d.style.height = "66px";
+    d.addEventListener("click", function () { pick(key); });
+    b.appendChild(d);
+    t.el = d;
+  });
+}
+
+function pick(key) {
+  if (busy) return;
+  var t = tiles[key]; if (!t || !t.alive) return;
+  beep("click");
+  if (!sel) { sel = key; t.el.classList.add("sel"); return; }
+  if (sel === key) { t.el.classList.remove("sel"); sel = null; return; }
+  var s = tiles[sel];
+  if (s.d.pid === t.d.pid && s.d.side !== t.d.side) {
+    var path = findPath(s, t);
+    if (path) { connect(s, t, path); return; }
+    // 配对正确但路径不通
+    s.el.classList.remove("sel"); t.el.classList.add("bad");
+    setTimeout(function () { t.el.classList.remove("bad"); }, 340);
+    toast("配对对了，但路被挡住");
+    beep("bad"); sel = null; combo = 0; updCombo(); return;
+  }
+  // 配错
+  s.el.classList.remove("sel");
+  t.el.classList.add("bad"); s.el.classList.add("bad");
+  setTimeout(function () { t.el.classList.remove("bad"); s.el.classList.remove("bad"); }, 340);
+  beep("bad"); sel = null; combo = 0; updCombo();
+  var p = PAIRS[t.d.pid];
+  if (p && p.why) toast("✗ " + p.why.slice(0, 18));
+}
+
+function updCombo() {
+  $("#combo").textContent = combo;
+  $("#comboBox").style.display = combo >= 2 ? "block" : "none";
+}
+
+function connect(a, b, path) {
+  busy = true;
+  var svg = $("#svg"), sb = $("#board").getBoundingClientRect();
+  function cx(t) { var r = t.el.getBoundingClientRect(); return { x: r.x + r.width / 2 - sb.x, y: r.y + r.height / 2 - sb.y }; }
+  var pts = path.map(function (p) { return p.r !== undefined ? cx(tiles[p.r + "_" + p.c]) : p; });
+  var d = "M" + pts[0].x + "," + pts[0].y;
+  for (var i = 1; i < pts.length; i++) d += " L" + pts[i].x + "," + pts[i].y;
+  var el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  el.setAttribute("d", d); svg.appendChild(el);
+
+  a.el.classList.add("pop"); b.el.classList.add("pop");
+  a.alive = false; b.alive = false; grid[a.r][a.c] = 0; grid[b.r][b.c] = 0;
+  combo++;
+  var gain = 10 + (combo - 1) * 5;
+  score += gain;
+  if (combo >= 2) { toast("连击 ×" + combo + "  +" + gain); beep("combo"); } else beep("ok");
+  $("#score").textContent = score; updCombo();
+  left--; $("#left").textContent = left;
+  var pp = PAIRS[a.d.pid];
+  if (pp && pp.why && combo < 2) toast("✓ " + pp.why.slice(0, 20));
+  sel = null;
+
+  setTimeout(function () {
+    a.el.classList.add("gone"); b.el.classList.remove("pop"); a.el.classList.remove("pop");
+    b.el.classList.add("gone");
+    svg.innerHTML = "";
+    busy = false;
+    if (left === 0) win();
+  }, 330);
+}
+
+// ── 路径判定：直线 / 一拐 / 两拐 ──
+function solid(r, c, a, b) {
+  if ((r === a.r && c === a.c) || (r === b.r && c === b.c)) return false;
+  return grid[r] && grid[r][c] === 1;
+}
+function hClear(r, c1, c2, a, b) {
+  var lo = Math.min(c1, c2), hi = Math.max(c1, c2);
+  for (var c = lo + 1; c < hi; c++) if (solid(r, c, a, b)) return false;
+  return true;
+}
+function vClear(c, r1, r2, a, b) {
+  var lo = Math.min(r1, r2), hi = Math.max(r1, r2);
+  for (var r = lo + 1; r < hi; r++) if (solid(r, c, a, b)) return false;
+  return true;
+}
+function findPath(a, b) {
+  // 相邻
+  if ((Math.abs(a.r - b.r) + Math.abs(a.c - b.c)) === 1) return [a, b];
+  // 直线
+  if (a.r === b.r && hClear(a.r, a.c, b.c, a, b)) return [a, b];
+  if (a.c === b.c && vClear(a.c, a.r, b.r, a, b)) return [a, b];
+  // 一拐
+  if (!solid(a.r, b.c, a, b) && grid[a.r][b.c] === 0 && hClear(a.r, a.c, b.c, a, b) && vClear(b.c, a.r, b.r, a, b))
+    return [a, { r: a.r, c: b.c }, b];
+  if (!solid(b.r, a.c, a, b) && grid[b.r][a.c] === 0 && vClear(a.c, a.r, b.r, a, b) && hClear(b.r, a.c, b.c, a, b))
+    return [a, { r: b.r, c: a.c }, b];
+  // 两拐：横向扫描
+  for (var c = 0; c < COLS + 2; c++) {
+    if (grid[a.r] && grid[a.r][c] === 0 && grid[b.r] && grid[b.r][c] === 0 &&
+      hClear(a.r, a.c, c, a, b) && vClear(c, a.r, b.r, a, b) && hClear(b.r, c, b.c, a, b))
+      return [a, { r: a.r, c: c }, { r: b.r, c: c }, b];
+  }
+  // 两拐：纵向扫描
+  for (var r = 0; r < ROWS + 2; r++) {
+    if (grid[r] && grid[r][a.c] === 0 && grid[r][b.c] === 0 &&
+      vClear(a.c, a.r, r, a, b) && hClear(r, a.c, b.c, a, b) && vClear(b.c, r, b.r, a, b))
+      return [a, { r: r, c: a.c }, { r: r, c: b.c }, b];
+  }
+  return null;
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timer = setInterval(function () {
+    timeLeft--; $("#time").textContent = fmt(timeLeft);
+    if (timeLeft <= 0) { clearInterval(timer); lose(); }
+  }, 1000);
+  $("#time").textContent = fmt(timeLeft);
+}
+function fmt(s) { var m = Math.floor(s / 60), ss = s % 60; return (m < 10 ? "0" : "") + m + ":" + (ss < 10 ? "0" : "") + ss; }
+
+function win() {
+  clearInterval(timer);
+  var stars = timeLeft > TIME * 0.5 ? 3 : (timeLeft > TIME * 0.2 ? 2 : 1);
+  score += timeLeft * 2;
+  $("#score").textContent = score;
+  $("#overTitle").textContent = "全部消完！";
+  $("#stars").innerHTML = stars >= 1 ? "★" : "";
+  $("#stars").innerHTML = '<span>★</span>'.repeat(stars) + '<span class="off">★</span>'.repeat(3 - stars);
+  $("#overMsg").innerHTML = "得分 " + score + " ｜ 剩余时间 " + fmt(timeLeft) + "（时间奖励 +" + (timeLeft * 2) + "）<br>配对关系记住了，可以上真设备。";
+  $("#over").classList.add("show"); beep("win");
+}
+function lose() {
+  $("#overTitle").textContent = "时间到";
+  $("#stars").innerHTML = '<span class="off">★</span><span class="off">★</span><span class="off">★</span>';
+  $("#overMsg").innerHTML = "还剩 " + left + " 对没消。<br>再点一次「重来」，这次先找相邻的配对。";
+  $("#over").classList.add("show"); beep("bad");
+}
+
+$("#hintBtn").onclick = function () {
+  score = Math.max(0, score - 20); $("#score").textContent = score;
+  var alive = Object.keys(tiles).filter(function (k) { return tiles[k].alive; });
+  for (var i = 0; i < alive.length; i++) for (var j = i + 1; j < alive.length; j++) {
+    var a = tiles[alive[i]], b = tiles[alive[j]];
+    if (a.d.pid === b.d.pid && a.d.side !== b.d.side && findPath(a, b)) {
+      [a, b].forEach(function (t) { t.el.classList.add("hint"); setTimeout(function () { t.el.classList.remove("hint"); }, 2100); });
+      return;
+    }
+  }
+};
+$("#shuffleBtn").onclick = function () {
+  var alive = Object.keys(tiles).filter(function (k) { return tiles[k].alive; });
+  var ds = alive.map(function (k) { return tiles[k].d; });
+  shuffleArr(ds);
+  alive.forEach(function (k, i) { tiles[k].d = ds[i]; });
+  sel = null; draw();
+  score = Math.max(0, score - 10); $("#score").textContent = score;
+};
+$("#againBtn").onclick = function () { location.reload(); };
+
+init();
+</script></body></html>

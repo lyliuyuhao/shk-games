@@ -1,0 +1,252 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>调试判据翻牌记忆</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:#eaf1ff;
+  background:#08152b;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 18% 12%,rgba(58,130,255,.20),transparent 40%),
+    radial-gradient(circle at 86% 80%,rgba(255,168,60,.14),transparent 44%),
+    conic-gradient(from 210deg at 50% 50%,#0a1a33,#0e2444,#0a1a33);
+  animation:slowspin 60s linear infinite}
+@keyframes slowspin{to{transform:rotate(360deg)}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+.wrap{position:relative;z-index:2;max-width:1000px;margin:0 auto;padding:16px 14px 56px}
+header{text-align:center;margin-bottom:8px}
+h1{font-size:23px;letter-spacing:1.5px;background:linear-gradient(92deg,#8ec2ff,#ffd479 60%,#ff9e7d);
+  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 10px rgba(120,180,255,.35))}
+.sub{font-size:12.5px;color:#8aa6cd;margin-top:6px}
+.hud{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0 14px}
+.hud div{background:rgba(255,255,255,.06);border:1px solid rgba(140,180,255,.2);border-radius:11px;
+  padding:6px 14px;font-size:13px;backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.hud b{color:#ffd479;font-size:15.5px;margin-left:3px}
+.hud.hot b{color:#ff8b6b}
+.acts{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+button{font-family:inherit;font-size:13.5px;padding:9px 20px;border-radius:10px;cursor:pointer;
+  border:1.5px solid rgba(140,180,255,.38);background:rgba(255,255,255,.07);color:#dce8fb;
+  transition:transform .15s,background .15s,border-color .15s,box-shadow .15s}
+button:hover{background:rgba(127,182,255,.2);border-color:#7fb6ff;transform:translateY(-2px);box-shadow:0 8px 22px rgba(60,130,255,.35)}
+button:active{transform:translateY(0) scale(.97)}
+#toast{position:fixed;left:50%;top:16%;transform:translateX(-50%) scale(.8);opacity:0;z-index:100;
+  font-size:25px;font-weight:800;pointer-events:none;color:#ffd479;text-shadow:0 0 24px rgba(255,180,60,.95),0 3px 10px rgba(0,0,0,.6)}
+#toast.show{animation:toast .9s cubic-bezier(.2,.9,.2,1)}
+@keyframes toast{0%{opacity:0;transform:translateX(-50%) scale(.6)}25%{opacity:1;transform:translateX(-50%) scale(1.18)}
+  64%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1.28)}}
+.over{position:fixed;inset:0;background:rgba(4,10,22,.9);display:none;align-items:center;justify-content:center;
+  z-index:120;backdrop-filter:blur(8px)}
+.over.show{display:flex;animation:fade .28s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.panel{background:linear-gradient(165deg,#1a3355,#10213a);border:1.5px solid rgba(140,180,255,.3);
+  border-radius:20px;padding:30px 38px;text-align:center;max-width:420px;
+  box-shadow:0 24px 70px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.1);animation:pop .34s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.panel h2{font-size:22px;margin-bottom:10px;background:linear-gradient(90deg,#8ec2ff,#ffd479);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.stars{font-size:36px;letter-spacing:7px;margin:12px 0;color:#ffd479;filter:drop-shadow(0 0 12px rgba(255,190,70,.8))}
+.stars .off{color:#33445e;filter:none}
+.panel p{font-size:13.5px;color:#a9c2e2;line-height:1.95}
+.note{text-align:center;font-size:11.5px;color:#6b82a6;margin-top:24px;line-height:1.75}
+.note a{color:#8ec2ff}
+
+#board{display:grid;gap:11px;justify-content:center;margin:0 auto}
+.card{perspective:900px;cursor:pointer;aspect-ratio:1.42/1}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .58s cubic-bezier(.42,.16,.28,1)}
+.card.flip .inner{transform:rotateY(180deg)}
+.card.matched .inner{transform:rotateY(180deg) scale(.9)}
+.card.matched{opacity:.42;pointer-events:none;filter:saturate(.6)}
+.card.shake{animation:shk .36s}
+@keyframes shk{0%,100%{transform:translateX(0)}22%{transform:translateX(-7px)}65%{transform:translateX(7px)}}
+.side{position:absolute;inset:0;border-radius:13px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;align-items:center;justify-content:center;text-align:center;padding:7px;overflow:hidden}
+.front{background:
+   linear-gradient(150deg,#1e3a63,#12253f);
+  border:1.5px solid rgba(120,170,255,.34);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px rgba(0,0,0,.42)}
+.front:before{content:"";position:absolute;inset:0;opacity:.5;
+  background-image:
+    repeating-linear-gradient(0deg,rgba(120,180,255,.12) 0 1px,transparent 1px 17px),
+    repeating-linear-gradient(90deg,rgba(120,180,255,.12) 0 1px,transparent 1px 17px),
+    radial-gradient(circle at 25% 30%,rgba(120,180,255,.28),transparent 38%)}
+.front span{position:relative;font-size:22px;color:rgba(150,200,255,.6);font-weight:800}
+.card:hover .front{border-color:#7fb6ff;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 26px rgba(60,130,255,.46)}
+.back{transform:rotateY(180deg);
+  background:linear-gradient(155deg,#f4f8ff,#dbe7fb);border:1.5px solid rgba(180,205,240,.95);
+  color:#16273f;font-size:11.5px;line-height:1.34;font-weight:600;flex-direction:column;gap:3px}
+.back .tag{font-size:9.5px;color:#4a6c96;font-weight:700;letter-spacing:.5px}
+.card.hint .front{animation:hintp 1s ease-in-out 2}
+@keyframes hintp{0%,100%{box-shadow:0 0 0 0 rgba(125,255,176,0)}50%{box-shadow:0 0 0 7px rgba(125,255,176,.65)}}
+</style></head><body>
+<canvas id="fx"></canvas>
+<div class="wrap">
+<header><h1>调试判据翻牌记忆</h1><div class="sub">项目5 二次回路调试 ｜ 5.2–5.8 七项检验判据 ｜ 翻牌记忆（约 5 分钟）</div></header>
+<div class="hud">
+  <div>配对<b id="pairs">0/10</b></div>
+  <div>翻牌<b id="moves">0</b></div>
+  <div>得分<b id="score">0</b></div>
+  <div class="hot">时间<b id="time">00:00</b></div>
+</div>
+<div id="board"></div>
+<div class="acts"><button id="hintBtn">提示（扣 15 分）</button><button id="againBtn">重来</button></div>
+<div class="note">[AI起草·待人工核定] 判据依据：出版稿《二次回路设计与安装调试》项目5；DL/T 995-2016；GB/T 50976-2014；DL/T 724-2021<br>玩法：点一张牌翻开，再点另一张；配对了就常亮，配错了会翻回去。连对得分更高。</div>
+</div>
+<div class="over" id="over"><div class="panel">
+  <h2 id="oT">过关</h2><div class="stars" id="oS"></div><p id="oM"></p>
+  <button onclick="location.reload()" style="margin-top:16px">再玩一次</button></div></div>
+<div id="toast"></div>
+<script>
+var PAIRS=[{"a": "整组绝缘电阻", "b": ">10MΩ", "why": "各回路对地和相互间均应大于 10MΩ", "src": "DL/T 995-2016 第 5.3.2.4 条"}, {"a": "支路绝缘", "b": "≥1MΩ", "why": "潮湿处 0.5MΩ；支路门槛低于整组", "src": "GB 50150 第 22.0.2 条"}, {"a": "保护回路压降", "b": "≤3%", "why": "负荷最大时不超过额定电压 3%", "src": "GB/T 50976-2014 第 4.4.1 条"}, {"a": "计量回路压降", "b": "≤0.5%", "why": "压降直接变成电费差错", "src": "DL/T 5202-2022 第 5.4.9 条"}, {"a": "母线纹波系数", "b": "≤2%", "why": "测点在直流母线", "src": "GB/T 14285-2023 第 8.8.2 条"}, {"a": "N600 接地电流", "b": "≤50mA", "why": "增量不超 20mA", "src": "企业验收指引附表2"}, {"a": "自保持线圈电流", "b": "≤50% 额定", "why": "不挤占跳合闸线圈电压", "src": "DL/T 995-2016 第 5.3.6.3 条"}, {"a": "合闸线圈压降", "b": "≥90% 额定", "why": "保证线圈得到动作电压", "src": "DL/T 995-2016"}, {"a": "蓄电池浮充", "b": "2.23–2.28V×N", "why": "均充才是 2.30–2.35", "src": "DL/T 724-2021 第 6.2.2.1 条"}, {"a": "运行中核容", "b": "三次≥80%", "why": "达不到判使用年限已到", "src": "DL/T 724-2021 第 7.4.1.2.2 条"}];   // [{a:"",b:"",why:"",src:""}]
+var COLS=4;
+
+var $ = function(s){return document.querySelector(s)};
+function beep(kind){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    window.__AC=window.__AC||new C(); var ac=window.__AC;
+    var cfg={click:[600,'sine',.05],ok:[880,'sine',.07],combo:[1240,'triangle',.08],
+             bad:[160,'square',.1],win:[1320,'sine',.09],tick:[420,'sine',.04]}[kind]||[600,'sine',.05];
+    var o=ac.createOscillator(),g=ac.createGain();
+    o.connect(g);g.connect(ac.destination);o.type=cfg[1];o.frequency.value=cfg[0];
+    g.gain.setValueAtTime(.0001,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(cfg[2],ac.currentTime+.012);
+    g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.26);
+    o.start();o.stop(ac.currentTime+.3);
+  }catch(e){}
+}
+function toast(t){var e=$('#toast');e.textContent=t;e.classList.remove('show');void e.offsetWidth;e.classList.add('show')}
+
+/* 自写粒子系统（canvas），不依赖任何外部库 */
+var FX=(function(){
+  var cv,ctx,ps=[],raf=null;
+  function init(){
+    cv=document.getElementById('fx');
+    if(!cv){cv=document.createElement('canvas');cv.id='fx';document.body.appendChild(cv)}
+    cv.width=innerWidth;cv.height=innerHeight;ctx=cv.getContext('2d');
+    addEventListener('resize',function(){cv.width=innerWidth;cv.height=innerHeight});
+  }
+  function burst(x,y,n,colors){
+    colors=colors||['#ffd479','#8ec2ff','#7dffb0','#ff9e7d','#c9a8ff'];
+    for(var i=0;i<n;i++){
+      var a=Math.random()*Math.PI*2,sp=2+Math.random()*7;
+      ps.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,
+        life:1,dec:.012+Math.random()*.016,
+        c:colors[(Math.random()*colors.length)|0],
+        r:2+Math.random()*3.4,rot:Math.random()*6,vr:(Math.random()-.5)*.3});
+    }
+    if(!raf) loop();
+  }
+  function loop(){
+    raf=requestAnimationFrame(loop);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(var i=ps.length-1;i>=0;i--){
+      var p=ps[i];
+      p.vy+=.16;p.vx*=.992;p.x+=p.vx;p.y+=p.vy;p.life-=p.dec;p.rot+=p.vr;
+      if(p.life<=0){ps.splice(i,1);continue}
+      ctx.save();ctx.globalAlpha=Math.max(0,p.life);
+      ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.fillStyle=p.c;ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2.4);
+      ctx.restore();
+    }
+    if(!ps.length){cancelAnimationFrame(raf);raf=null;ctx.clearRect(0,0,cv.width,cv.height)}
+  }
+  function rain(n){
+    for(var i=0;i<n;i++){
+      var x=Math.random()*innerWidth, y=-20-Math.random()*120;
+      ps.push({x:x,y:y,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,life:1,dec:.006+Math.random()*.008,
+        c:['#ffd479','#8ec2ff','#7dffb0','#ff9e7d','#c9a8ff','#ffffff'][(Math.random()*6)|0],
+        r:2+Math.random()*3,rot:Math.random()*6,vr:(Math.random()-.5)*.35});
+    }
+    if(!raf) loop();
+  }
+  init();
+  return {burst:burst,rain:rain};
+})();
+
+function starsHTML(n){var s='';for(var i=0;i<3;i++)s+= i<n?'<span class="star">★</span>':'<span class="off">★</span>';return s}
+function fmtT(s){var m=Math.floor(s/60),ss=s%60;return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss}
+
+var deck=[],first=null,lock=false,pairsDone=0,moves=0,score=0,combo=0,t=0,timer=null;
+
+function build(){
+  deck=[];
+  PAIRS.forEach(function(p,i){
+    deck.push({pid:i,text:p.a,tag:'左'});
+    deck.push({pid:i,text:p.b,tag:'右'});
+  });
+  for(var i=deck.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=deck[i];deck[i]=deck[j];deck[j]=x}
+  var b=$('#board');
+  b.style.gridTemplateColumns='repeat('+COLS+',minmax(0,1fr))';
+  b.style.width='min(94vw,'+(COLS*150)+'px)';
+  b.innerHTML='';
+  deck.forEach(function(d,i){
+    var c=document.createElement('div');c.className='card';c.dataset.i=i;
+    c.innerHTML='<div class="inner"><div class="side front"><span>?</span></div>'+
+      '<div class="side back"><div class="tag">'+d.tag+'</div><div>'+d.text+'</div></div></div>';
+    c.addEventListener('click',function(){flip(i,c)});
+    b.appendChild(c);
+  });
+  $('#pairs').textContent='0/'+PAIRS.length;
+  timer=setInterval(function(){t++;$('#time').textContent=fmtT(t)},1000);
+}
+
+function flip(i,el){
+  if(lock||el.classList.contains('flip')||el.classList.contains('matched'))return;
+  beep('click');el.classList.add('flip');
+  if(first===null){first={i:i,el:el};return}
+  if(first.i===i){return}
+  moves++;$('#moves').textContent=moves;
+  var a=first,b={i:i,el:el};first=null;
+  if(deck[a.i].pid===deck[b.i].pid){
+    lock=true;
+    setTimeout(function(){
+      a.el.classList.add('matched');b.el.classList.add('matched');
+      pairsDone++;combo++;
+      var gain=20+(combo-1)*10;
+      score+=gain;$('#score').textContent=score;
+      $('#pairs').textContent=pairsDone+'/'+PAIRS.length;
+      var r=a.el.getBoundingClientRect();
+      FX.burst(r.x+r.width/2,r.y+r.height/2,26);
+      if(combo>=2){toast('连对 ×'+combo+'  +'+gain);beep('combo')}
+      else{beep('ok')}
+      var p=PAIRS[deck[a.i].pid];
+      if(p&&p.why&&combo<2)toast('✓ '+p.why.slice(0,18));
+      lock=false;
+      if(pairsDone===PAIRS.length)win();
+    },430);
+  }else{
+    lock=true;
+    a.el.classList.add('shake');b.el.classList.add('shake');
+    beep('bad');combo=0;score=Math.max(0,score-5);$('#score').textContent=score;
+    var p=PAIRS[deck[b.i].pid];
+    if(p&&p.why)toast('✗ '+p.why.slice(0,18));
+    setTimeout(function(){
+      a.el.classList.remove('flip','shake');b.el.classList.remove('flip','shake');
+      lock=false;
+    },900);
+  }
+}
+
+function win(){
+  clearInterval(timer);
+  var st=t<10*6?3:(t<10*10?2:1);
+  score+=Math.max(0,(10*12-t)*3);$('#score').textContent=score;
+  $('#oT').textContent='全部配对！';
+  $('#oS').innerHTML=starsHTML(st);
+  $('#oM').innerHTML='翻牌 '+moves+' 次 ｜ 用时 '+fmtT(t)+' ｜ 得分 '+score+'<br>配对关系记住了，可以上真设备。';
+  $('#over').classList.add('show');beep('win');FX.rain(120);
+}
+$('#hintBtn').onclick=function(){
+  score=Math.max(0,score-15);$('#score').textContent=score;
+  var cards=[].slice.call(document.querySelectorAll('.card')).filter(function(c){return !c.classList.contains('matched')&&!c.classList.contains('flip')});
+  for(var i=0;i<cards.length;i++)for(var j=i+1;j<cards.length;j++){
+    if(deck[+cards[i].dataset.i].pid===deck[+cards[j].dataset.i].pid){
+      [cards[i],cards[j]].forEach(function(c){c.classList.add('hint');setTimeout(function(){c.classList.remove('hint')},2100)});
+      return;
+    }
+  }
+};
+$('#againBtn').onclick=function(){location.reload()};
+build();
+</script></body></html>
