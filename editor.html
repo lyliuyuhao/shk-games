@@ -122,6 +122,10 @@ input:focus,textarea:focus{outline:none;border-color:#7fb6ff;box-shadow:0 0 0 3p
       <label id="imgLabel">背景图</label>
       <div class="drop" id="drop">点这里选图片，或把图片拖进来<br><span style="font-size:11px;color:#6b82a6">jpg / png，长边 ≥1200px，单张 &lt;2MB</span></div>
       <input type="file" id="file" accept="image/*" class="hide">
+      <div id="pinWrap" class="hide">
+        <div class="tip" style="margin:12px 0 8px;color:#ffd479;font-weight:700">👇 在下面这张图上点一下就加一个点位（可以连着点好几处；点已有点位可删掉它）</div>
+        <div id="pinArea" style="position:relative;display:inline-block;max-width:100%;line-height:0"><img id="pinImg" style="max-width:100%;display:block;border-radius:10px;cursor:crosshair"></div>
+      </div>
     </div>
     <div class="panel">
       <label id="itemsLabel">内容条目</label>
@@ -289,6 +293,7 @@ function renderStep2(){
       bindDrop("drop2","file2",function(d){CFG.img2=d});
     }
   } else { var old=$("#imgPanel2"); if(old) old.remove(); }
+  renderPins();
   renderItems();
 }
 function pasteHint(tp){
@@ -330,6 +335,7 @@ function renderItems(){
       inp.click();
     };
   });
+  if(typeof renderPins==="function") renderPins();
 }
 
 /* 图片上传绑定 */
@@ -345,9 +351,54 @@ function bindDrop(dropId,fileId,cb){
     if(!/^image\//.test(f.type)){say("sad","这个不是图片文件。");return}
     if(f.size>2*1024*1024){ if(!confirm("这张图 "+Math.round(f.size/1024)+"KB，超过 2MB，导出的 HTML 会变大。继续？"))return; }
     var r=new FileReader();
-    r.onload=function(){ cb(r.result); dp.className="drop has"; dp.innerHTML='<img src="'+r.result+'">'; say("happy","图片载入了。") };
+    r.onload=function(){
+      cb(r.result);
+      dp.className="drop has";
+      dp.onclick=null;                       // 关键：载入后不再整块触发选文件
+      dp.style.padding="8px";
+      dp.innerHTML='<div style="display:flex;align-items:center;gap:10px">'+
+        '<img src="'+r.result+'" style="width:64px;height:46px;object-fit:cover;border-radius:6px;border:1px solid rgba(125,255,176,.5)">'+
+        '<span style="font-size:12px;color:#7dffb0;flex:1;text-align:left">✔ 图片已载入</span>'+
+        '<button class="btn sm" id="chgBtn">换一张</button></div>';
+      var cb2=document.getElementById("chgBtn");
+      if(cb2) cb2.onclick=function(ev){ ev.stopPropagation(); fi.value=""; fi.click(); };
+      say("happy","图片载入了。现在在下面那张大图上点几处要讲的地方。");
+      if(typeof renderPins==="function") renderPins();
+    };
     r.readAsDataURL(f);
   }
+}
+
+/* 打点区：大图 + 已有点位标记，点图加点位、点点位可删 */
+function renderPins(){
+  var w=document.querySelector("#pinWrap"), a=document.querySelector("#pinArea"), im=document.querySelector("#pinImg");
+  if(!w||!a||!im) return;
+  if(!CFG.img){ w.className="hide"; return; }
+  w.className="";
+  if(im.getAttribute("src")!==CFG.img) im.src=CFG.img;
+  a.querySelectorAll(".pmark").forEach(function(e){e.remove()});
+  CFG.items.forEach(function(it,i){
+    if(it.x==null||it.y==null) return;
+    var d=document.createElement("div");
+    d.className="pmark";
+    d.style.cssText="position:absolute;left:"+it.x+"%;top:"+it.y+"%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#ffd479;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#4a3400;box-shadow:0 0 0 3px rgba(255,212,121,.32);cursor:pointer;line-height:1";
+    d.textContent=(i+1);
+    d.title="点这个点位可删掉它";
+    d.onclick=function(ev){ ev.stopPropagation(); CFG.items.splice(i,1); renderItems(); renderPins(); };
+    a.appendChild(d);
+  });
+  im.onclick=function(e){
+    var r=im.getBoundingClientRect();
+    var x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
+    if(x<0||x>100||y<0||y>100) return;
+    var it={}; (FIELDS[CFG.type]||[]).forEach(function(f){it[f.k]=""});
+    it.x=+x.toFixed(1); it.y=+y.toFixed(1);
+    var f0=(FIELDS[CFG.type]||[])[0];
+    if(f0) it[f0.k]=((f0.k==="label")?"标签":"点位")+(CFG.items.length+1);
+    CFG.items.push(it);
+    renderItems(); renderPins();
+    say("normal","加了第 "+CFG.items.length+" 个点位，到左下角列表里填名称和说明。");
+  };
 }
 
 /* 批量粘贴 */
