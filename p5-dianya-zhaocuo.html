@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>交流电压回路调试 · 通压核相图面找错</title>
+<style>
+:root{--blue:#0B3D91;--orange:#F5A623;--green:#2E7D32;--red:#C62828;--ink:#2B2F36;--bg:#F5F7FA;}
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 56px}
+header{background:linear-gradient(135deg,#0B3D91,#1a56b8);color:#fff;border-radius:10px;padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden}
+header:after{content:"";position:absolute;right:-50px;top:-50px;width:180px;height:180px;border:10px solid rgba(255,255,255,.10);border-radius:50%}
+header h1{margin:0;font-size:21px}
+header p{margin:7px 0 0;font-size:13px;opacity:.88}
+.bar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:14px;font-size:13px}
+.pill{background:#fff;border:1px solid #dfe5ee;border-radius:999px;padding:4px 13px}
+.pill b{color:var(--blue)}
+.prog{height:7px;background:#e6ecf5;border-radius:999px;overflow:hidden;margin-bottom:16px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0B3D91,#2E7D32);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.card{background:#fff;border-radius:10px;padding:20px 22px;box-shadow:0 2px 10px rgba(11,61,145,.08)}
+.hint{background:#FFF7E6;border-left:4px solid var(--orange);padding:9px 13px;border-radius:0 6px 6px 0;font-size:13.5px;margin:0 0 16px}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:7px;padding:10px 24px;font-size:14.5px;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{filter:brightness(1.12)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.center{text-align:center}
+.pop{display:none;margin-top:14px;border-radius:8px;padding:13px 15px;font-size:14px;animation:pop .3s cubic-bezier(.2,.8,.2,1)}
+.pop.ok{display:block;background:#EDF7EE;border-left:4px solid var(--green)}
+.pop.no{display:block;background:#FDECEC;border-left:4px solid var(--red)}
+.pop .src{display:block;margin-top:6px;font-size:12.5px;color:#5a6472}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.shake{animation:shake .35s}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,.55)}50%{box-shadow:0 0 0 10px rgba(46,125,50,0)}}
+.glow{animation:glow .7s ease-out 2}
+.end{display:none}
+.score{font-size:38px;color:var(--blue);font-weight:700;margin:8px 0}
+.note{margin-top:24px;font-size:12px;color:#6b7280;border-top:1px dashed #d7dee8;padding-top:10px}
+
+.scene{position:relative;background:#F7FAFE;border:2px solid #d7e2f0;border-radius:10px;padding:18px;margin-bottom:14px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 11px;border:2px solid transparent;border-radius:7px;font-size:13.5px;cursor:pointer;transition:.16s;margin-bottom:6px}
+.row:hover{background:#EEF4FF;border-color:#c3d6f5}
+.row.found{background:#FDECEC;border-color:var(--red);cursor:default}
+.row.found .tag{background:var(--red);color:#fff}
+.row.correct-glow{background:#EDF7EE;border-color:var(--green)}
+.row.miss{animation:shake .35s}
+.tag{flex:0 0 auto;font-size:11px;background:#e8eefb;color:var(--blue);border-radius:4px;padding:2px 7px;font-family:monospace}
+.txt{flex:1}
+.hit{color:var(--red);font-weight:700}
+</style></head><body><div class="wrap">
+<header><h1>交流电压回路调试 · 通压核相图面找错</h1><p>项目5 二次回路调试 ｜ 5.4 交流电压回路调试 ｜ 找错点击（约 4 分钟）</p></header>
+<div class="bar"><span class="pill">找到 <b id="prog">0 / 9</b></span><span class="pill">得分 <b id="score">0</b></span><span class="pill">满分 <b>90</b></span><span class="pill">剩余 <b id="left">3</b></span></div>
+<div class="prog"><i id="progbar"></i></div>
+<div class="card">
+  <p class="hint" id="hintText">玩法：下面这份图面里藏着 9 处错误，用鼠标点出来。点错了会扣分。</p>
+  <div class="scene" id="scene"></div>
+  <div class="pop" id="pop"></div>
+  <div style="margin-top:14px"><button class="btn ghost" id="restart">重来</button></div>
+</div>
+<div class="card end" id="done"><div class="center"><div class="score" id="final">0</div><p id="comment"></p><button class="btn" id="again" style="margin-top:10px">再练一次</button></div></div>
+<div class="note">[AI起草·待人工核定] 判据依据：出版稿《二次回路设计与安装调试》任务 5.3（交流电压回路调试）；DL/T 995-2016 第 5.3.2.3/5.3.2.4/5.3.2.7 条；GB/T 50976-2014；DL/T 5202-2022。本页作课堂练习，不作考核依据。</div>
+</div><script>
+var ROWS=[{"tag": "PT-01", "text": "通压前已断开 PT 二次绕组空开，隔离点利用刀闸辅助接点断开", "bad": false, "wrong": "这条是对的——通压前断二次空开是防反送电的必修动作。"}, {"tag": "PT-02", "text": "N600 在开关场与主控室各接一点地", "bad": true, "why": "经 N600 连通的几组 PT 二次回路只应在控制室一点接地，开关场中性点接地点应断开。两点接地时地网电位差在中性线产生电流，零序电压分配改变，零序方向元件误判。", "src": "DL/T 995-2016 第 5.3.2.3 条"}, {"tag": "PT-03", "text": "4 根二次引入线与 3 根开口三角引入线共用同一段电缆芯", "bad": true, "why": "二次引入线与三次（开口三角）引入线必须分开，不得共用；开口三角回路还不得接可断开的熔断器。", "src": "DL/T 995-2016 第 5.3.2.3 条"}, {"tag": "PT-04", "text": "核相判据：同名相电压差值为零，非同名相电压差值为线电压值", "bad": false, "wrong": "这条判据是对的，差值法就是这么判的。"}, {"tag": "PT-05", "text": "计量回路压降按额定二次电压的 3% 判", "bad": true, "why": "计量回路压降按 0.5% 掌握；3% 是保护与测量回路的口径。拿 3% 判计量回路是现场常见错误。", "src": "GB/T 50976-2014 第 4.4.1 条第 3 款；DL/T 5202-2022 第 5.4.9 条"}, {"tag": "PT-06", "text": "通压前已核对所用 PT 变比与现场实际情况相符", "bad": false, "wrong": "这条是对的——变比不对，核相判据全部没有意义。"}, {"tag": "PT-07", "text": "核相结果与预期不符，调整保护回路接线使数据对上", "bad": true, "why": "应分析原因，不允许随意改动保护回路接线。拿改接线凑数据是规程明令禁止的错误做法。", "src": "DL/T 995-2016 第 5.5.2.8 条"}, {"tag": "PT-08", "text": "开口三角回路串接了可断开的熔断器", "bad": true, "why": "开口三角回路不得接可断开的熔断器——一旦熔断，绝缘监察与零序保护就失效了。", "src": "DL/T 995-2016 第 5.3.2.3 条"}, {"tag": "PT-09", "text": "加压前通知人员离开被试设备，取得试验负责人许可后加压", "bad": false, "wrong": "这条是对的，是加压类试验的准入条件。"}];   // [{tag:"A411", text:"...", bad:true, why:"", src:"", wrong:"这里是对的"}]
+var LVL=10, found=0, score=0, lives=3, total=0;
+
+function $(s){return document.querySelector(s)}
+function $$(s){return [...document.querySelectorAll(s)]}
+function beep(ok){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    window.__AC=window.__AC||new C(); var ac=window.__AC;
+    var o=ac.createOscillator(), g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.frequency.value = ok?880:180; o.type = ok?'sine':'square';
+    g.gain.setValueAtTime(.001,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(ok?.08:.12,ac.currentTime+.01);
+    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+(ok?.22:.30));
+    o.start(); o.stop(ac.currentTime+(ok?.24:.32));
+  }catch(e){}
+}
+function setProg(p){ var b=$('#progbar'); if(b) b.style.width=Math.max(0,Math.min(100,p))+'%'; }
+function setScore(s){ var e=$('#score'); if(e) e.textContent=s; }
+function showPop(ok,html,src){
+  var p=$('#pop'); p.className='pop '+(ok?'ok':'no');
+  p.innerHTML='<b>'+(ok?'✔ 对了':'✘ 不对')+'</b><br>'+html+(src?'<span class="src">依据：'+src+'</span>':'');
+}
+
+function render(){
+  var S=$('#scene'); S.innerHTML='';
+  found=0; score=0; lives=3; setScore(0); setProg(0);
+  total=ROWS.filter(function(r){return r.bad;}).length;
+  $('#done').style.display='none'; $('.card').style.display='block';
+  $('#hintText').textContent='玩法：下面这份图面里藏着 '+total+' 处错误，用鼠标点出来。点错了会扣分。';
+  $('#left').textContent=lives;
+  var sh=shuffle(ROWS.map(function(r,i){return i;}));
+  sh.forEach(function(i){
+    var r=ROWS[i];
+    var d=document.createElement('div'); d.className='row';
+    d.innerHTML='<span class="tag">'+(r.tag||'')+'</span><span class="txt">'+r.text+'</span>';
+    d.dataset.idx=i;
+    d.addEventListener('click',function(){ tap(d, i); });
+    S.appendChild(d);
+  });
+  $('#prog').textContent='0 / '+total;
+}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function tap(el, i){
+  if(el.classList.contains('found')) return;
+  var r=ROWS[i];
+  if(r.bad){
+    beep(true);
+    el.classList.add('found');
+    el.querySelector('.txt').innerHTML='<span class="hit">✘ '+r.text+'</span>';
+    found++; score+=LVL; setScore(score); setProg(100*found/total);
+    $('#prog').textContent=found+' / '+total;
+    showPop(true,'找对了。'+r.why,r.src);
+    if(found===total) setTimeout(finish,700);
+  } else {
+    beep(false);
+    lives--; $('#left').textContent=lives;
+    el.classList.add('miss');
+    setTimeout(function(){ el.classList.remove('miss'); },400);
+    showPop(false,'这里没问题。'+(r.wrong||''),r.src||'');
+    if(lives<=0){
+      $$('.row').forEach(function(x){ if(ROWS[parseInt(x.dataset.idx,10)].bad) x.classList.add('correct-glow'); });
+      showPop(false,'机会用完了。红色高亮的就是该点出来的错误。','');
+      setTimeout(finish,1400);
+    }
+  }
+}
+function finish(){
+  $('.card').style.display='none'; $('#done').style.display='block';
+  $('#final').textContent=score+' 分';
+  $('#comment').textContent = (found===total)?'全找出来了。这双眼睛可以上现场了。':'还差 '+(total-found)+' 处没找到。看看高亮的都是什么问题。';
+}
+$('#restart').onclick=render; $('#again').onclick=render;
+render();
+</script></body></html>
