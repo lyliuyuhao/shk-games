@@ -17,3 +17,4 @@
 - [p2-mingpai-lianxian.html](https://lyliuyuhao.github.io/shk-games/p2-mingpai-lianxian.html)
 - [p2-zhunquelv-huakuai.html](https://lyliuyuhao.github.io/shk-games/p2-zhunquelv-huakuai.html)
 - [p2-jixing-zhaocuo.html](https://lyliuyuhao.github.io/shk-games/p2-jixing-zhaocuo.html)
+- [p2-jiexian-guzhangshu.html](https://lyliuyuhao.github.io/shk-games/p2-jiexian-guzhangshu.html)
