@@ -12,3 +12,4 @@
 - [p5-jiaoliu-dianya-fanzhaocuo.html](https://lyliuyuhao.github.io/shk-games/p5-jiaoliu-dianya-fanzhaocuo.html)
 - [p5-kongzhi-fangtiao-shiyan.html](https://lyliuyuhao.github.io/shk-games/p5-kongzhi-fangtiao-shiyan.html)
 - [p8-xuduanzi-lianxian.html](https://lyliuyuhao.github.io/shk-games/p8-xuduanzi-lianxian.html)
+- [p8-duibizhaocuo.html](https://lyliuyuhao.github.io/shk-games/p8-duibizhaocuo.html)
