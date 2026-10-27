@@ -14,3 +14,4 @@
 - [p8-xuduanzi-lianxian.html](https://lyliuyuhao.github.io/shk-games/p8-xuduanzi-lianxian.html)
 - [p8-duibizhaocuo.html](https://lyliuyuhao.github.io/shk-games/p8-duibizhaocuo.html)
 - [p8-peizhi-guzhangshu.html](https://lyliuyuhao.github.io/shk-games/p8-peizhi-guzhangshu.html)
+- [p2-mingpai-lianxian.html](https://lyliuyuhao.github.io/shk-games/p2-mingpai-lianxian.html)
