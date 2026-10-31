@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>5.5 距离保护检验 · 仿真 · 虚拟仿真</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#eef4fb;color:#0b2545;padding:16px}
+.wrap{max-width:1000px;margin:0 auto}
+header{background:linear-gradient(120deg,#07263F,#0d4a73 60%,#1F7FC0);color:#fff;border-radius:14px;
+  padding:14px 20px;margin-bottom:14px;display:flex;gap:14px;align-items:center}
+header h1{font-size:18px}header .sub{font-size:12.5px;opacity:.9;margin-top:3px}
+.hud{margin-left:auto;display:flex;gap:16px;font-size:13px;font-weight:700}
+.hud b{font-size:18px;color:#FFD479}
+.card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 10px rgba(11,37,69,.08);margin-bottom:14px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;font-size:13px}
+.meta div b{color:#1a56b8}
+.scene{background:#f7fafd;border-left:3px solid #1F7FC0;padding:12px 14px;border-radius:8px;font-size:14px;line-height:1.75}
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.opt{border:1.5px solid #cfe0f5;border-radius:10px;padding:12px 14px;cursor:pointer;font-size:14px;transition:.15s;background:#fff}
+.opt:hover{border-color:#1F7FC0;transform:translateX(2px)}
+.opt.bad{background:#fef2f2;border-color:#b91c1c}
+.opt.good{background:#ecfdf5;border-color:#059669}
+.log{margin-top:12px;font-size:13px;line-height:1.7}
+.log div{padding:7px 10px;border-radius:8px;margin-bottom:6px}
+.log .ok{background:#f0fdf4;color:#065f46;border-left:3px solid #059669}
+.log .no{background:#fef2f2;color:#7f1d1d;border-left:3px solid #b91c1c}
+.bar{height:8px;background:#e3ecf7;border-radius:6px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#0F7B6C,#F5A623);width:0;transition:.3s}
+button{border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;background:#0B3D91;color:#fff}
+.rule{font-size:12.5px;color:#41576e;line-height:1.8}
+.veto{background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:10px 14px;font-size:13px;color:#7f1d1d;margin-top:8px}
+</style></head><body><div class="wrap">
+<header><svg width="46" height="46" viewBox="0 0 100 100">
+<circle cx="50" cy="50" r="46" fill="#fff" opacity=".16"/>
+<path d="M18 46a32 32 0 0 1 64 0z" fill="#F5A623"/><circle cx="50" cy="56" r="24" fill="#ffe0bd"/>
+<circle cx="41" cy="53" r="3" fill="#0b2545"/><circle cx="59" cy="53" r="3" fill="#0b2545"/>
+<path d="M42 64q8 6 16 0" stroke="#0b2545" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+<div><h1>5.5 距离保护检验 · 仿真</h1><div class="sub">图文分支仿真 · 每次选择都会产生后果</div></div>
+<div class="hud"><div>步骤 <b id="st">1</b>/<b id="tot">1</b></div><div>总分 <b id="sc">100</b></div></div></header>
+
+<div class="card">
+  <div class="meta">
+    <div><b>场景</b><br>110kV 线路距离保护屏</div>
+    <div><b>设备与初始状态</b><br>定值已核对，测试仪接入，装置处于运行一致条件</div>
+    <div><b>目标结果</b><br>验证相间／接地距离各段边界、振荡闭锁与 TV 断线闭锁</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="scene" id="scene"></div>
+  <div class="opts" id="opts"></div>
+  <div class="bar"><i id="pg"></i></div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+  <div class="rule"><b>判分规则：</b>初始 100 分；每步错误按扣分表扣分；<b>触发任一否决项即本次 0 分</b>；完成全部正确步骤按剩余分计。
+  <div class="veto" id="veto"></div></div>
+  <div style="margin-top:12px"><button onclick="restart()">重新开始</button></div>
+</div>
+</div>
+<script>
+const SIM = {"steps": [{"scene": "动作区怎么验？", "options": [{"t": "只测边界内一点", "ok": false, "pen": 10, "fb": "边界外侧也要测，否则动作区扩大发现不了。"}, {"t": "边界内侧应动作、外侧应不动作，各段都要验", "ok": true, "fb": "边界两侧才是选择性。"}]}, {"scene": "接地距离多一个什么参数？", "options": [{"t": "不用管，和相间一样", "ok": false, "pen": 10, "fb": "要先核对零序补偿系数。"}, {"t": "零序补偿系数，按定值单与装置定义核对", "ok": true, "fb": "系数错，接地距离全错。"}]}, {"scene": "系统振荡时保护应？", "options": [{"t": "正确动作", "ok": false, "pen": 15, "veto": true, "fb": "振荡不应误动，须闭锁。"}, {"t": "不误动作（振荡闭锁有效）", "ok": true, "fb": "闭锁有效是底线。"}]}, {"scene": "振荡过程中发生区内故障呢？", "options": [{"t": "继续闭锁", "ok": false, "pen": 20, "veto": true, "fb": "该开不开＝拒动，后果最严重。"}, {"t": "闭锁应可靠开放，保护正确动作", "ok": true, "fb": "该闭时闭、该开时开。"}]}, {"scene": "模拟 TV 断线。", "options": [{"t": "保护照常动作即可", "ok": false, "pen": 15, "fb": "电压失压会使测量阻抗失真，应闭锁并告警。"}, {"t": "距离保护闭锁并发告警；断线复归后恢复正常", "ok": true, "fb": "两个方向都验过。"}]}, {"scene": "误差怎么判？", "options": [{"t": "凭感觉，差距不大就行", "ok": false, "pen": 10, "fb": "应按连续 5 次取最大误差，≤5.0% 或装置技术条件更严者。"}, {"t": "连续 5 次取最大误差，≤5.0%（或更严者）并写明依据", "ok": true, "fb": "数值有出处，结论才可审。"}]}], "vetoes": ["振荡时误动", "振荡中故障不开放", "按无出处数值判定误差"]};
+let i = 0, score = 100, vetoed = false;
+document.getElementById('tot').textContent = SIM.steps.length;
+document.getElementById('veto').innerHTML = '否决项：' + SIM.vetoes.map((v,k)=>(k+1)+'. '+v).join('　');
+
+function render(){
+  if(vetoed || i >= SIM.steps.length){ finish(); return; }
+  const s = SIM.steps[i];
+  document.getElementById('st').textContent = i+1;
+  document.getElementById('scene').innerHTML = s.scene;
+  document.getElementById('opts').innerHTML = s.options.map((o,k)=>
+    '<div class="opt" data-k="'+k+'" onclick="choose('+k+')">'+o.t+'</div>').join('');
+  document.getElementById('pg').style.width = (i/SIM.steps.length*100)+'%';
+}
+function choose(k){
+  const s = SIM.steps[i], o = s.options[k], box = document.querySelector('.opt[data-k="'+k+'"]');
+  const log = document.getElementById('log');
+  if(o.ok){
+    box.classList.add('good');
+    log.insertAdjacentHTML('beforeend','<div class="ok">✅ '+o.fb+'</div>');
+    i++;
+    setTimeout(render, 550);
+  } else {
+    box.classList.add('bad');
+    score -= (o.pen || 10);
+    if(o.veto){ vetoed = true; }
+    log.insertAdjacentHTML('beforeend','<div class="no">❌ '+o.fb+(o.veto?'　【触发否决项，本次 0 分】':'　（−'+(o.pen||10)+' 分）')+'</div>');
+    if(vetoed){ setTimeout(finish, 700); } else { setTimeout(()=>box.classList.remove('bad'), 600); }
+  }
+  document.getElementById('sc').textContent = vetoed ? 0 : Math.max(score,0);
+}
+function finish(){
+  document.getElementById('opts').innerHTML = '';
+  document.getElementById('pg').style.width = '100%';
+  const final = vetoed ? 0 : Math.max(score, 0);
+  document.getElementById('scene').innerHTML = '<b>仿真结束</b>　得分：<b style="font-size:20px;color:'+
+    (final>=60?'#047857':'#b91c1c')+'">'+final+'</b> / 100　'+
+    (vetoed ? '<span style="color:#b91c1c">（触发否决项）</span>' : (final>=60?'通过':'未通过（<60）'));
+  document.getElementById('sc').textContent = final;
+  document.getElementById('log').insertAdjacentHTML('beforeend',
+    '<div class="ok">回传数据项：完成时长、错误步骤序列、否决触发、最终状态（用于学情分析）</div>');
+}
+function restart(){ i=0; score=100; vetoed=false; document.getElementById('log').innerHTML='';
+  document.getElementById('sc').textContent=100; render(); }
+render();
+</script></body></html>

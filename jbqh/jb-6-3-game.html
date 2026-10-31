@@ -1,0 +1,378 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>6.3 光纤通道检查与衰耗测试</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#eef4fb;color:#0b2545;padding:16px}
+.wrap{max-width:1080px;margin:0 auto}
+header{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#0B3D91,#1a56b8 60%,#F5A623);color:#fff;border-radius:14px;padding:14px 20px;margin-bottom:14px}
+header h1{font-size:18px}header .sub{font-size:12.5px;opacity:.9;margin-top:3px}
+.hud{margin-left:auto;display:flex;gap:16px;font-size:13px;font-weight:700}
+.hud b{font-size:18px;color:#FFD479}
+.card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(11,37,69,.08);margin-bottom:14px}
+.qa{display:flex;gap:12px;align-items:flex-start}
+.bubble{flex:1;background:#f4f8ff;border:1px solid #cfe0f5;border-radius:12px;padding:11px 13px;font-size:13.5px;line-height:1.65}
+.msg{margin-top:10px;font-size:13px;line-height:1.6;padding:9px 12px;border-radius:9px;min-height:20px}
+.msg.ok{background:#f0fdf4;color:#065f46;border-left:3px solid #059669}
+.msg.no{background:#fef2f2;color:#7f1d1d;border-left:3px solid #b91c1c}
+.bar{height:8px;background:#e3ecf7;border-radius:6px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0B3D91,#F5A623);transition:.3s}
+button{border:none;border-radius:10px;padding:10px 18px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;background:#0B3D91;color:#fff}
+button.ghost{background:#eaf1fa;color:#0B3D91}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.pool{display:flex;flex-wrap:wrap;gap:9px;min-height:56px;background:#f8fbff;border:1px dashed #b9cfe8;border-radius:10px;padding:9px}
+.chip{cursor:grab;background:#fff;border:1.5px solid #cfe0f5;border-radius:9px;padding:9px 13px;font-size:13px;user-select:none;transition:.15s}
+.chip:hover{border-color:#1a56b8;transform:translateY(-1px)}
+.chip.dragging{opacity:.45}
+.chip.done{background:#ecfdf5;border-color:#059669;color:#065f46;cursor:default;opacity:.8}
+.chip.bad{animation:shake .3s;border-color:#b91c1c;background:#fef2f2}
+.slots{display:grid;gap:9px}
+.slot{min-height:54px;border:1.5px dashed #b9cfe8;border-radius:9px;background:#fafcff;padding:5px}
+.slot.over{border-color:#F5A623;background:#fff8ec}
+.lbl{font-size:11.5px;color:#8aa3c0;padding:2px 5px}
+.cols{display:flex;gap:16px}
+.cols>div{flex:1}
+.li{border:1.5px solid #cfe0f5;border-radius:9px;padding:9px 11px;font-size:13px;cursor:pointer;background:#fff;line-height:1.55;margin-bottom:8px;transition:.15s}
+.li:hover{border-color:#1a56b8}
+.li.sel{border-color:#F5A623;box-shadow:0 0 0 2px rgba(245,166,35,.22)}
+.li.done{background:#ecfdf5;border-color:#059669;color:#065f46;cursor:default}
+.li.bad{animation:shake .3s;border-color:#b91c1c}
+.rw{display:flex;gap:10px;align-items:flex-start;border:1.5px solid transparent;border-radius:8px;padding:9px 11px;font-size:13px;cursor:pointer;background:#fafcff;margin-bottom:7px;line-height:1.55}
+.rw:hover{border-color:#c3d6f5;background:#eef4ff}
+.rw.found{background:#fef2f2;border-color:#b91c1c;cursor:default}
+.rw.glow{background:#f0fdf4;border-color:#059669}
+.tag{flex:0 0 auto;font-size:10.5px;background:#e8eefb;color:#0B3D91;border-radius:4px;padding:2px 6px;font-family:monospace}
+.num{background:#f8fbff;border:1px solid #d7e2f0;border-radius:10px;padding:12px}
+.num .val{font-size:22px;font-weight:800;color:#0B3D91}
+input[type=range]{width:100%;margin:12px 0}
+.node{border:1.5px solid #cfe0f5;border-radius:9px;padding:11px 13px;font-size:13px;background:#fff;cursor:pointer;line-height:1.55;margin-bottom:8px}
+.node:hover{border-color:#1a56b8}
+.node.done{background:#f0fdf4;border-color:#059669;color:#065f46;cursor:default}
+.path{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.hop{background:#e8eefb;color:#0B3D91;border-radius:999px;padding:3px 11px;font-size:12px}
+.small{font-size:12px;color:#7d93ad;line-height:1.7}
+h3.t{font-size:14px;color:#1a56b8;margin-bottom:9px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+</style></head><body><div class="wrap">
+<header><svg width="50" height="50" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff" opacity=".16"/>
+<path d="M18 46a32 32 0 0 1 64 0z" fill="#F5A623"/><circle cx="50" cy="56" r="24" fill="#ffe0bd"/>
+<circle cx="41" cy="53" r="3" fill="#0b2545"/><circle cx="59" cy="53" r="3" fill="#0b2545"/>
+<path d="M42 64q8 6 16 0" stroke="#0b2545" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+<div><h1>6.3 光纤通道检查与衰耗测试</h1><div class="sub">玩法：排序／找错／数值判断／连线／拖拽归位／配对消除 · 6 关 · 每关 10 分 · 60 及格</div></div>
+<div class="hud"><div>关卡 <b id="lv">1</b>/6</div><div>得分 <b id="sc">0</b></div></div></header>
+<div class="card"><div class="qa">
+<svg width="72" height="72" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#eaf1fa"/>
+<path d="M18 46a32 32 0 0 1 64 0z" fill="#F5A623"/><circle cx="50" cy="56" r="24" fill="#ffe0bd"/>
+<g id="eyes"><circle cx="41" cy="53" r="3.2" fill="#0b2545"/><circle cx="59" cy="53" r="3.2" fill="#0b2545"/></g>
+<path id="mpath" d="M42 64q8 6 16 0" stroke="#0b2545" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+<div class="bubble" id="say"></div></div>
+<div class="bar"><i id="pg"></i></div></div>
+<div id="stage"></div>
+<div class="card" id="end" style="display:none;text-align:center">
+ <h2 id="endT" style="color:#0B3D91;margin-bottom:8px"></h2>
+ <p id="endM" style="font-size:13.5px;line-height:1.8"></p>
+ <div class="row" style="justify-content:center"><button id="again">再玩一次</button></div>
+</div>
+<div class="card"><div class="small">判据依据均标注标准号与条款号；本页为课堂练习，不作考核依据。<br>老师要提供：最好给我 1 张现场照片或一段作业文本，可升级为「图上藏错」。</div></div>
+</div><script>
+var DATA = {"levels": [{"mode": "sort", "q": "把这 5 步排成正确顺序——顺序错，后果不同。", "items": ["查装置规范", "测衰耗", "测收发功率", "算收信裕度", "结论与记录"], "judge": "工序错＝结论失效。", "basis": "本任务讲义「工作步骤」"}, {"mode": "spot", "q": "下面混着合规做法与违规做法，把违规的点出来。", "rows": [{"tag": "违规", "text": "只测工作纤芯、不测备用纤芯", "bad": true, "why": "备用通道不可用而无人知｜判据 1"}, {"tag": "违规", "text": "把载波判据（3dB／8.686dB）用于光纤", "bad": true, "why": "判据错位｜判据备注"}, {"tag": "违规", "text": "不测收发功率、只凭「能通信」判断", "bad": true, "why": "裕度不足时雨季/老化后中断｜判据 2"}, {"tag": "违规", "text": "光纤端面不清洁即测", "bad": true, "why": "读数失真｜本页做法步骤 2"}, {"tag": "合规", "text": "保护装置到保护接口装置间光缆的每根纤芯（含备用纤芯）传输衰耗不应大于 2.5dB", "bad": false, "why": ""}, {"tag": "合规", "text": "利用专用光纤通道传输保护信息的保护设备，应对其收发信功率和收信灵敏功率进", "bad": false, "why": ""}, {"tag": "合规", "text": "光信号发射功率与灵敏接收功率应符合装置规范", "bad": false, "why": ""}], "judge": "违规做法往往看着都像「省时间」。", "basis": "本任务讲义「红线／否决项」"}, {"mode": "num", "q": "拖滑块改一下实测值，再点判定——看看这条判据到底卡在哪。", "ask": "利用专用光纤通道传输保护信息的保护设备，应对其收发信功率和收信灵敏功率进行测试，通道的收信裕度", "value": 10.3, "unit": "dB", "min": 8.0, "max": 12.0, "step": 0.01, "low": 10.0, "high": null, "range": "≥10.0", "fb": "与判据比对再看一眼：合格区间是 ≥10.0。", "basis": "§5.6.9"}, {"mode": "link", "q": "把每条要求连到它对应的依据。", "pairs": [["保护装置到保护接口装置间光缆的<b>每根纤芯（含备用纤芯）传输衰耗不应大于 2.5d", "GB/T 50976-2014 §5.6.9", "依据：GB/T 50976-2014 §5.6.9"], ["利用<b>专用光纤通道</b>传输保护信息的保护设备，应对其<b>收发信功率和收信灵", "§5.6.9", "依据：§5.6.9"], ["光信号发射功率与灵敏接收功率应<b>符合装置规范</b>", "§5.6.9", "依据：§5.6.9"], ["通道完好性另可用自环／拔插观察信号灯／激光笔检查（与衰耗测试互为补充）", "DL/T 995-2016 §5.3.5.2 a", "依据：DL/T 995-2016 §5.3.5.2 a"]], "judge": "要求与条款一一对应。", "basis": "本任务讲义「判据表」"}, {"mode": "puzzle", "q": "把右侧依据拖到左侧对应要求的空位。", "slots": ["保护装置到保护接口装置间光缆的每根纤芯（含备用纤芯）传输衰耗不应大于", "利用专用光纤通道传输保护信息的保护设备，应对其收发信功率", "光信号发射功率与灵敏接收功率应符合装置规范"], "chips": ["GB/T 50976-2014 §5.6.9", "§5.6.9", "§5.6.9", "（干扰项）见装置技术条件"], "answer": ["GB/T 50976-2014 §5.6.9", "§5.6.9", "§5.6.9"], "why": ["依据：GB/T 50976-2014 §5.6", "依据：§5.6.9", "依据：§5.6.9"], "judge": "错一个，这一组就都错了。", "basis": "本任务讲义「判据表」"}, {"mode": "match3", "q": "配对消除：把要求与它的依据配成对。", "pairs": [["通道完好性另可用自环／拔插观察信号灯／激光笔检查（与衰耗测试", "DL/T 995-2016 §5.3.5", ""], ["≤2.5dB", "GB/T 50976-2014 §5.6", ""], ["宜 >10dB；至少 ≥6dB", "同上", ""]], "judge": "看混了就会配错。", "basis": "本任务讲义「判据表」"}], "closing": "同一份判据换玩法再练：排序练工序、找错练眼力、连线练出处、数值练判定。"};
+var lv = 0, score = 0, selA = null, dragEl = null, cur = null;
+
+var FACE = {
+  normal: ['<circle cx="41" cy="53" r="3.2" fill="#0b2545"/><circle cx="59" cy="53" r="3.2" fill="#0b2545"/>', 'M42 64q8 6 16 0'],
+  happy: ['<path d="M36 53q5-6 10 0" stroke="#0b2545" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M54 53q5-6 10 0" stroke="#0b2545" stroke-width="2.6" fill="none" stroke-linecap="round"/>', 'M40 62q10 12 20 0'],
+  think: ['<circle cx="41" cy="53" r="3.2" fill="#0b2545"/><circle cx="59" cy="53" r="3.2" fill="#0b2545"/>', 'M44 66h12'],
+  sad: ['<path d="M36 56q5-5 10 0" stroke="#0b2545" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M54 56q5-5 10 0" stroke="#0b2545" stroke-width="2.6" fill="none" stroke-linecap="round"/>', 'M42 68q8-6 16 0']
+};
+function face(k, txt) {
+  var f = FACE[k] || FACE.normal;
+  var eyes = document.getElementById('eyes');
+  var mpath = document.getElementById('mpath');
+  if (eyes) eyes.innerHTML = f[0];
+  if (mpath) mpath.setAttribute('d', f[1]);
+  document.getElementById('say').innerHTML = txt;
+}
+function say(cls, html) {
+  var m = document.getElementById('m');
+  if (!m) return;
+  m.className = 'msg ' + cls;
+  m.innerHTML = html;
+}
+function shuffle(a) {
+  a = a.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function el(tag, cls, txt) {
+  var d = document.createElement(tag);
+  if (cls) d.className = cls;
+  if (txt !== undefined && txt !== null) d.textContent = txt;
+  return d;
+}
+function hud() {
+  document.getElementById('lv').textContent = Math.min(lv + 1, DATA.levels.length);
+  document.getElementById('sc').textContent = score;
+  document.getElementById('pg').style.width = (lv / DATA.levels.length * 100) + '%';
+}
+function nextLevel() { lv++; if (lv >= DATA.levels.length) { finish(); } else { mount(); } }
+function ok(txt) { score += 10; hud(); face('happy', txt); setTimeout(nextLevel, 900); }
+function mount() {
+  cur = DATA.levels[lv]; selA = null; dragEl = null; hud(); face('normal', cur.q);
+  var S = document.getElementById('stage');
+  S.innerHTML = '';
+  var box = el('div', 'card');
+  S.appendChild(box);
+  var fn = { sort: rSort, link: rLink, puzzle: rPuzzle, spot: rSpot, num: rNum, match3: rMatch3, tree: rTree }[cur.mode] || rSort;
+  fn(box);
+  var m = el('div', ''); m.id = 'm'; box.appendChild(m);
+}
+function finish() {
+  document.getElementById('stage').innerHTML = '';
+  var e = document.getElementById('end');
+  e.style.display = '';
+  var pass = score >= 60;
+  document.getElementById('endT').textContent = pass ? '通关！' : '还差一点';
+  document.getElementById('endM').innerHTML = '得分 <b>' + score + '</b> / ' + (DATA.levels.length * 10) + '（每关 10 分）<br>' + DATA.closing;
+  face(pass ? 'happy' : 'think', pass ? '判据记牢，现场就靠这个。' : '把错的几关再走一遍。');
+  document.getElementById('pg').style.width = '100%';
+}
+function restart() {
+  lv = 0; score = 0;
+  document.getElementById('end').style.display = 'none';
+  mount();
+}
+
+/* ── S 排序：拖拽 ── */
+function rSort(box) {
+  var q = cur;
+  box.appendChild(el('h3', 't', '把步骤拖到右侧，排成正确顺序'));
+  var cols = el('div', 'cols'); box.appendChild(cols);
+  var left = el('div', ''), right = el('div', '');
+  cols.appendChild(left); cols.appendChild(right);
+  var pool = el('div', 'pool'); pool.id = 'pool'; left.appendChild(pool);
+  var slots = el('div', 'slots'); slots.id = 'slots'; right.appendChild(slots);
+  shuffle(q.items).forEach(function (t) {
+    var c = el('div', 'chip', t);
+    c.draggable = true;
+    c.dataset.t = encodeURIComponent(t);
+    c.addEventListener('dragstart', function (ev) { dragEl = c; c.classList.add('dragging'); ev.dataTransfer.setData('text/plain', 'x'); });
+    c.addEventListener('dragend', function () { c.classList.remove('dragging'); });
+    pool.appendChild(c);
+  });
+  q.items.forEach(function (t, i) {
+    var s = el('div', 'slot');
+    s.dataset.i = i;
+    var lb = el('div', 'lbl', '第 ' + (i + 1) + ' 步');
+    s.appendChild(lb);
+    s.addEventListener('dragover', function (ev) { ev.preventDefault(); s.classList.add('over'); });
+    s.addEventListener('dragleave', function () { s.classList.remove('over'); });
+    s.addEventListener('drop', function (ev) {
+      ev.preventDefault(); s.classList.remove('over');
+      if (!dragEl) return;
+      if (s.querySelector('.chip')) return;
+      s.appendChild(dragEl); dragEl = null;
+    });
+    slots.appendChild(s);
+  });
+  pool.addEventListener('dragover', function (ev) { ev.preventDefault(); });
+  pool.addEventListener('drop', function (ev) {
+    ev.preventDefault(); if (dragEl) { pool.appendChild(dragEl); dragEl = null; }
+  });
+  var btn = el('button', '', '检查顺序');
+  btn.addEventListener('click', function () {
+    var bad = [];
+    Array.prototype.forEach.call(document.querySelectorAll('#slots .slot'), function (s, i) {
+      var it = s.querySelector('.chip');
+      var got = it ? decodeURIComponent(it.dataset.t) : '';
+      if (got === q.items[i]) { if (it) it.classList.add('done'); }
+      else { if (it) it.classList.add('bad'); bad.push(i + 1); }
+    });
+    if (!bad.length) { say('ok', '✅ 顺序正确，依据：' + q.basis); ok('顺序全对！'); }
+    else { say('no', '❌ 第 ' + bad.join('、') + ' 步不对。' + q.judge + '<br>依据：' + q.basis); face('sad', '再想想哪一步在前。'); }
+  });
+  var r = el('div', 'row'); r.appendChild(btn); box.appendChild(r);
+}
+
+/* ── L 连线 ── */
+function rLink(box) {
+  var q = cur;
+  box.appendChild(el('h3', 't', '点左边一项，再点右边对应项'));
+  var cols = el('div', 'cols'); box.appendChild(cols);
+  var A = el('div', ''); A.id = 'colA'; var B = el('div', ''); B.id = 'colB';
+  cols.appendChild(A); cols.appendChild(B);
+  shuffle(q.pairs.map(function (p) { return p[0]; })).forEach(function (t) {
+    var d = el('div', 'li', t); d.dataset.k = encodeURIComponent(t);
+    d.addEventListener('click', function () { pickLink(d); });
+    A.appendChild(d);
+  });
+  shuffle(q.pairs.map(function (p) { return p[1]; })).forEach(function (t) {
+    var d = el('div', 'li', t); d.dataset.v = encodeURIComponent(t);
+    d.addEventListener('click', function () { pickLink(d); });
+    B.appendChild(d);
+  });
+}
+function pickLink(d) {
+  var q = cur;
+  if (d.classList.contains('done')) return;
+  if (!selA) { if (d.parentElement.id !== 'colA') { face('think', '先点左边那一列。'); return; } selA = d; d.classList.add('sel'); return; }
+  if (d.parentElement.id === 'colA') { selA.classList.remove('sel'); selA = d; d.classList.add('sel'); return; }
+  var a = decodeURIComponent(selA.dataset.k), b = decodeURIComponent(d.dataset.v);
+  var hit = q.pairs.filter(function (p) { return p[0] === a && p[1] === b; })[0];
+  if (hit) {
+    selA.classList.remove('sel'); selA.classList.add('done'); d.classList.add('done'); selA = null;
+    say('ok', '✅ ' + (hit[2] || '配对正确'));
+    if (document.querySelectorAll('#colA .done').length === q.pairs.length) ok('全部连对！');
+  } else {
+    d.classList.add('bad'); setTimeout(function () { d.classList.remove('bad'); }, 420);
+    say('no', '❌ 不是一对。' + q.judge + '<br>依据：' + q.basis);
+    if (selA) { selA.classList.remove('sel'); selA = null; }
+  }
+}
+
+/* ── P 拖拽归位 ── */
+function rPuzzle(box) {
+  var q = cur;
+  box.appendChild(el('h3', 't', '把右侧词条拖到左侧对应空位'));
+  var cols = el('div', 'cols'); box.appendChild(cols);
+  var L = el('div', ''); L.id = 'slotsW'; var R = el('div', '');
+  cols.appendChild(L); cols.appendChild(R);
+  var slots = el('div', 'slots'); L.appendChild(slots);
+  q.slots.forEach(function (s, i) {
+    var d = el('div', 'slot'); d.dataset.i = i;
+    d.appendChild(el('div', 'lbl', s));
+    d.addEventListener('dragover', function (ev) { ev.preventDefault(); d.classList.add('over'); });
+    d.addEventListener('dragleave', function () { d.classList.remove('over'); });
+    d.addEventListener('drop', function (ev) {
+      ev.preventDefault(); d.classList.remove('over');
+      if (!dragEl) return;
+      if (d.querySelector('.chip')) return;
+      d.appendChild(dragEl);
+      var got = decodeURIComponent(dragEl.dataset.t);
+      if (got === q.answer[i]) {
+        dragEl.classList.add('done');
+        say('ok', '✅ 放对了。' + (q.why[i] || ''));
+        if (document.querySelectorAll('#slotsW .chip.done').length === q.slots.length) ok('全部归位！');
+      } else {
+        var c = dragEl; c.classList.add('bad');
+        setTimeout(function () { c.classList.remove('bad'); }, 420);
+        document.getElementById('pool').appendChild(c);
+        say('no', '❌ 位置不对。' + q.judge);
+      }
+      dragEl = null;
+    });
+    slots.appendChild(d);
+  });
+  var pool = el('div', 'pool'); pool.id = 'pool'; R.appendChild(pool);
+  shuffle(q.chips).forEach(function (t) {
+    var c = el('div', 'chip', t); c.draggable = true; c.dataset.t = encodeURIComponent(t);
+    c.addEventListener('dragstart', function () { dragEl = c; c.classList.add('dragging'); });
+    c.addEventListener('dragend', function () { c.classList.remove('dragging'); });
+    pool.appendChild(c);
+  });
+}
+
+/* ── X 找错 ── */
+function rSpot(box) {
+  var q = cur;
+  var total = q.rows.filter(function (r) { return r.bad; }).length;
+  box.appendChild(el('h3', 't', '下面这份作业里藏着 ' + total + ' 处错误，点出来'));
+  shuffle(q.rows).forEach(function (r) {
+    var d = el('div', 'rw');
+    d.appendChild(el('span', 'tag', r.tag || ''));
+    d.appendChild(el('span', '', r.text));
+    d.addEventListener('click', function () {
+      if (d.classList.contains('found')) return;
+      if (r.bad) {
+        d.classList.add('found');
+        say('ok', '✅ 找对了。' + (r.why || ''));
+        if (document.querySelectorAll('.rw.found').length === total) ok('全部找出！');
+      } else {
+        d.classList.add('glow'); setTimeout(function () { d.classList.remove('glow'); }, 520);
+        say('no', '这里是对的。' + q.judge);
+        face('sad', '这条没问题，再看看别的。');
+      }
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ── N 数值判断 ── */
+function rNum(box) {
+  var q = cur;
+  box.appendChild(el('h3', 't', q.ask));
+  var n = el('div', 'num');
+  var vlab = el('div', '', '实测值：');
+  var v = el('span', 'val', String(q.value)); v.id = 'nv';
+  vlab.appendChild(v); vlab.appendChild(document.createTextNode(' ' + q.unit));
+  n.appendChild(vlab);
+  var rg = document.createElement('input');
+  rg.type = 'range'; rg.min = q.min; rg.max = q.max; rg.step = q.step; rg.value = q.value;
+  rg.addEventListener('input', function () { v.textContent = rg.value; });
+  n.appendChild(rg);
+  n.appendChild(el('div', 'small', '拖动滑块改变实测值，再点判定｜合格：' + q.range));
+  var r = el('div', 'row');
+  var b = el('button', '', '判定');
+  b.addEventListener('click', function () {
+    var val = parseFloat(rg.value);
+    var okv = (q.low === null || val >= q.low) && (q.high === null || val <= q.high);
+    if (okv) { say('ok', '✅ 这个值在合格区间（' + q.range + '）内，判合格。依据：' + q.basis); ok('判定正确！'); }
+    else { say('no', '❌ ' + q.fb + '<br>依据：' + q.basis); face('sad', '这个值超了，再拖一次。'); }
+  });
+  r.appendChild(b); n.appendChild(r);
+  box.appendChild(n);
+}
+
+/* ── M 配对消除 ── */
+function rMatch3(box) {
+  var q = cur;
+  box.appendChild(el('h3', 't', '点两张能配对的卡片（要求 ↔ 依据），配对成功即消除'));
+  var grid = el('div', '');
+  grid.style.display = 'grid'; grid.style.gridTemplateColumns = 'repeat(4,1fr)'; grid.style.gap = '9px';
+  grid.id = 'grid';
+  var tiles = [];
+  q.pairs.forEach(function (p, i) { tiles.push({ t: p[0], g: i }); tiles.push({ t: p[1], g: i }); });
+  shuffle(tiles).forEach(function (x) {
+    var d = el('div', 'li', x.t); d.dataset.g = x.g;
+    d.style.minHeight = '64px'; d.style.display = 'flex'; d.style.alignItems = 'center';
+    d.addEventListener('click', function () { tapM3(d); });
+    grid.appendChild(d);
+  });
+  box.appendChild(grid);
+}
+function tapM3(d) {
+  var q = cur;
+  if (d.classList.contains('done')) return;
+  if (!selA) { selA = d; d.classList.add('sel'); return; }
+  if (selA === d) { d.classList.remove('sel'); selA = null; return; }
+  if (selA.dataset.g === d.dataset.g) {
+    selA.classList.remove('sel'); selA.classList.add('done'); d.classList.add('done'); selA = null;
+    say('ok', '✅ 配对成功，两张一起消除。');
+    if (document.querySelectorAll('#grid .done').length === document.querySelectorAll('#grid .li').length) ok('全消！');
+  } else {
+    d.classList.add('bad');
+    var a = selA; selA = null; a.classList.remove('sel');
+    setTimeout(function () { d.classList.remove('bad'); }, 420);
+    say('no', '❌ 这两张不是一对。' + q.judge);
+  }
+}
+
+/* ── T 故障树 ── */
+function rTree(box) {
+  var q = cur;
+  var p = el('div', 'path');
+  (q.hops || []).forEach(function (h) { p.appendChild(el('span', 'hop', h)); });
+  box.appendChild(p);
+  shuffle(q.nodes).forEach(function (n) {
+    var d = el('div', 'node', n.t);
+    d.addEventListener('click', function () {
+      if (d.classList.contains('done')) return;
+      if (n.ok) { d.classList.add('done'); say('ok', '✅ ' + n.fb + '<br>依据：' + q.basis); ok('定位正确！'); }
+      else { say('no', '❌ ' + n.fb); face('sad', '这个方向不对。'); }
+    });
+    box.appendChild(d);
+  });
+}
+
+var __h = parseInt((location.hash || "").replace("#", ""), 10);
+if (!isNaN(__h) && __h >= 0 && __h < DATA.levels.length) lv = __h;
+mount();
+</script></body></html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1.4 二次安全措施票编制与执行 · 仿真 · 虚拟仿真</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#eef4fb;color:#0b2545;padding:16px}
+.wrap{max-width:1000px;margin:0 auto}
+header{background:linear-gradient(120deg,#07263F,#0d4a73 60%,#1F7FC0);color:#fff;border-radius:14px;
+  padding:14px 20px;margin-bottom:14px;display:flex;gap:14px;align-items:center}
+header h1{font-size:18px}header .sub{font-size:12.5px;opacity:.9;margin-top:3px}
+.hud{margin-left:auto;display:flex;gap:16px;font-size:13px;font-weight:700}
+.hud b{font-size:18px;color:#FFD479}
+.card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 10px rgba(11,37,69,.08);margin-bottom:14px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;font-size:13px}
+.meta div b{color:#1a56b8}
+.scene{background:#f7fafd;border-left:3px solid #1F7FC0;padding:12px 14px;border-radius:8px;font-size:14px;line-height:1.75}
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.opt{border:1.5px solid #cfe0f5;border-radius:10px;padding:12px 14px;cursor:pointer;font-size:14px;transition:.15s;background:#fff}
+.opt:hover{border-color:#1F7FC0;transform:translateX(2px)}
+.opt.bad{background:#fef2f2;border-color:#b91c1c}
+.opt.good{background:#ecfdf5;border-color:#059669}
+.log{margin-top:12px;font-size:13px;line-height:1.7}
+.log div{padding:7px 10px;border-radius:8px;margin-bottom:6px}
+.log .ok{background:#f0fdf4;color:#065f46;border-left:3px solid #059669}
+.log .no{background:#fef2f2;color:#7f1d1d;border-left:3px solid #b91c1c}
+.bar{height:8px;background:#e3ecf7;border-radius:6px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#0F7B6C,#F5A623);width:0;transition:.3s}
+button{border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;background:#0B3D91;color:#fff}
+.rule{font-size:12.5px;color:#41576e;line-height:1.8}
+.veto{background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:10px 14px;font-size:13px;color:#7f1d1d;margin-top:8px}
+</style></head><body><div class="wrap">
+<header><svg width="46" height="46" viewBox="0 0 100 100">
+<circle cx="50" cy="50" r="46" fill="#fff" opacity=".16"/>
+<path d="M18 46a32 32 0 0 1 64 0z" fill="#F5A623"/><circle cx="50" cy="56" r="24" fill="#ffe0bd"/>
+<circle cx="41" cy="53" r="3" fill="#0b2545"/><circle cx="59" cy="53" r="3" fill="#0b2545"/>
+<path d="M42 64q8 6 16 0" stroke="#0b2545" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+<div><h1>1.4 二次安全措施票编制与执行 · 仿真</h1><div class="sub">图文分支仿真 · 每次选择都会产生后果</div></div>
+<div class="hud"><div>步骤 <b id="st">1</b>/<b id="tot">1</b></div><div>总分 <b id="sc">100</b></div></div></header>
+
+<div class="card">
+  <div class="meta">
+    <div><b>场景</b><br>110kV 线路保护屏，定检开工前</div>
+    <div><b>设备与初始状态</b><br>保护装置运行中，压板投入、TA/TV 二次回路接线完好，工作票已签发、安措票待编制</div>
+    <div><b>目标结果</b><br>在不停错设备的前提下完成定检安措的编制→执行→恢复→移交，最终状态与开工前一致</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="scene" id="scene"></div>
+  <div class="opts" id="opts"></div>
+  <div class="bar"><i id="pg"></i></div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+  <div class="rule"><b>判分规则：</b>初始 100 分；每步错误按扣分表扣分；<b>触发任一否决项即本次 0 分</b>；完成全部正确步骤按剩余分计。
+  <div class="veto" id="veto"></div></div>
+  <div style="margin-top:12px"><button onclick="restart()">重新开始</button></div>
+</div>
+</div>
+<script>
+const SIM = {"steps": [{"scene": "开工前，桌上摆着工作票与一张空白的二次工作安全措施票。第一步做什么？", "options": [{"t": "先把压板退出来，边做边补票", "ok": false, "pen": 20, "veto": true, "fb": "无书面安全要求即作业，属否决项。GB 26860-2011 §4.3.1：应有工作票等书面安全要求。"}, {"t": "核对工作票与安措票、确认审批与许可，再按票执行", "ok": true, "fb": "票证齐、已审批、已许可，才可以动手。"}, {"t": "先干一半，等班长来了再签字", "ok": false, "pen": 20, "veto": true, "fb": "先执行后补签属否决项。"}]}, {"scene": "开始写「安全措施内容」栏。怎么写？", "options": [{"t": "按实施先后逐项写，能照着做、照着恢复", "ok": true, "fb": "按先后顺序写，恢复才有地图。"}, {"t": "按重要程度从高到低写", "ok": false, "pen": 5, "fb": "顺序不对，恢复时无据可依。"}, {"t": "把能想到的都列上，越多越安全", "ok": false, "pen": 5, "fb": "漏掉关键项比多写更危险；按实施顺序、覆盖三类联系。"}]}, {"scene": "要隔离哪些回路？", "options": [{"t": "只隔跳闸回路", "ok": false, "pen": 10, "fb": "还须隔离采样回路、以及至其他运行保护与安全自动装置的关联回路。"}, {"t": "采样、跳闸（含远跳）、合闸、启动失灵与闭重等与运行设备相关的二次回路全部隔离", "ok": true, "fb": "三类联系全覆盖，才算隔干净。"}, {"t": "拔掉所有光纤最彻底", "ok": false, "pen": 10, "fb": "拔纤属最后手段，且不得影响其他保护设备正常运行。"}]}, {"scene": "执行安措，几人做、怎么做？", "options": [{"t": "两人各自负责一半，节省时间", "ok": false, "pen": 10, "fb": "应至少两人：一人执行、一人监护，逐项执行并核对。"}, {"t": "一人执行、一人监护，按票的顺序逐项执行并勾检", "ok": true, "fb": "双人＋逐项＋勾检，缺一不可。"}, {"t": "一人快速做完，做完统一核对", "ok": false, "pen": 10, "fb": "无监护、无逐项核对，顺序错也发现不了。"}]}, {"scene": "处理 TA 二次回路。怎么短接？", "options": [{"t": "用多股导线在端子上缠绕短接", "ok": false, "pen": 15, "veto": true, "fb": "禁止用导线缠绕；应用短路片或短路线，否则接触不可靠→TA 开路。"}, {"t": "用专用短路片（或短路线）可靠短接后再拆线", "ok": true, "fb": "先短接、再拆线，是铁律。"}, {"t": "拆完线再回头短接", "ok": false, "pen": 20, "veto": true, "fb": "顺序反了＝开路瞬间已产生高电压。"}]}, {"scene": "TA 回路唯一的接地点怎么办？", "options": [{"t": "临时断开也没关系，反正工作结束会恢复", "ok": false, "pen": 20, "veto": true, "fb": "运行中 TA 二次回路应保持唯一接地点，工作中不应断开该点。"}, {"t": "保持唯一接地点不动，必要时按票采取替代措施", "ok": true, "fb": "接地点是安全底线。"}]}, {"scene": "作业结束，恢复顺序？", "options": [{"t": "按当天方便的顺序恢复", "ok": false, "pen": 10, "fb": "原则上按与执行相反的顺序恢复；确无需恢复的应在恢复栏注明。"}, {"t": "按与执行相反的顺序逐项恢复；无需恢复项在恢复栏注明，双人确认", "ok": true, "fb": "逆序恢复＋注明＋双人确认＝可追溯。"}]}, {"scene": "投压板前做什么？", "options": [{"t": "装置无告警就可以投", "ok": false, "pen": 15, "veto": true, "fb": "投压板前须确认压板在断开位置、装置状态正常，并检查压板每一端对地电位正确后才能投入。"}, {"t": "确认硬压板在断开位置、装置状态正常，检查压板每端对地电位正确后，再投入并核对", "ok": true, "fb": "先验后投，防误投。"}]}, {"scene": "最后一步，向运行移交。", "options": [{"t": "口头说一下好了就行", "ok": false, "pen": 10, "fb": "须恢复所有措施至工作许可时状态、拆除临时接线、清场、信号复归，并办理终结。"}, {"t": "恢复至工作许可时状态、拆除临时线并清场、信号全部复归，办理工作票终结", "ok": true, "fb": "至此闭环：票证—措施—执行—恢复—终结。"}]}], "vetoes": ["未审批即执行", "导线缠绕短接 TA", "拆线后再短接（顺序反）", "断开 TA 唯一接地点", "投压板前不验电位"]};
+let i = 0, score = 100, vetoed = false;
+document.getElementById('tot').textContent = SIM.steps.length;
+document.getElementById('veto').innerHTML = '否决项：' + SIM.vetoes.map((v,k)=>(k+1)+'. '+v).join('　');
+
+function render(){
+  if(vetoed || i >= SIM.steps.length){ finish(); return; }
+  const s = SIM.steps[i];
+  document.getElementById('st').textContent = i+1;
+  document.getElementById('scene').innerHTML = s.scene;
+  document.getElementById('opts').innerHTML = s.options.map((o,k)=>
+    '<div class="opt" data-k="'+k+'" onclick="choose('+k+')">'+o.t+'</div>').join('');
+  document.getElementById('pg').style.width = (i/SIM.steps.length*100)+'%';
+}
+function choose(k){
+  const s = SIM.steps[i], o = s.options[k], box = document.querySelector('.opt[data-k="'+k+'"]');
+  const log = document.getElementById('log');
+  if(o.ok){
+    box.classList.add('good');
+    log.insertAdjacentHTML('beforeend','<div class="ok">✅ '+o.fb+'</div>');
+    i++;
+    setTimeout(render, 550);
+  } else {
+    box.classList.add('bad');
+    score -= (o.pen || 10);
+    if(o.veto){ vetoed = true; }
+    log.insertAdjacentHTML('beforeend','<div class="no">❌ '+o.fb+(o.veto?'　【触发否决项，本次 0 分】':'　（−'+(o.pen||10)+' 分）')+'</div>');
+    if(vetoed){ setTimeout(finish, 700); } else { setTimeout(()=>box.classList.remove('bad'), 600); }
+  }
+  document.getElementById('sc').textContent = vetoed ? 0 : Math.max(score,0);
+}
+function finish(){
+  document.getElementById('opts').innerHTML = '';
+  document.getElementById('pg').style.width = '100%';
+  const final = vetoed ? 0 : Math.max(score, 0);
+  document.getElementById('scene').innerHTML = '<b>仿真结束</b>　得分：<b style="font-size:20px;color:'+
+    (final>=60?'#047857':'#b91c1c')+'">'+final+'</b> / 100　'+
+    (vetoed ? '<span style="color:#b91c1c">（触发否决项）</span>' : (final>=60?'通过':'未通过（<60）'));
+  document.getElementById('sc').textContent = final;
+  document.getElementById('log').insertAdjacentHTML('beforeend',
+    '<div class="ok">回传数据项：完成时长、错误步骤序列、否决触发、最终状态（用于学情分析）</div>');
+}
+function restart(){ i=0; score=100; vetoed=false; document.getElementById('log').innerHTML='';
+  document.getElementById('sc').textContent=100; render(); }
+render();
+</script></body></html>

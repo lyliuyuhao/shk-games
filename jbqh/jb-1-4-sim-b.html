@@ -1,0 +1,137 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>1.4 二次安全措施执行台（B 级仿真）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#eef4fb;color:#0b2545;padding:14px}
+.wrap{max-width:1180px;margin:0 auto}
+header{background:linear-gradient(120deg,#07263F,#0d4a73 60%,#1F7FC0);color:#fff;border-radius:14px;
+ padding:13px 18px;margin-bottom:12px;display:flex;gap:12px;align-items:center}
+header h1{font-size:17px}header .sub{font-size:12px;opacity:.9;margin-top:2px}
+.hud{margin-left:auto;display:flex;gap:14px;font-size:12.5px;font-weight:700;text-align:center}
+.hud b{display:block;font-size:18px;color:#FFD479}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(11,37,69,.08)}
+.card h3{font-size:13.5px;color:#1a56b8;margin-bottom:9px}
+.stage{position:relative;min-height:300px;border:1.5px solid #d7e2f0;border-radius:12px;padding:14px;
+ background:linear-gradient(180deg,#fbfdff,#f2f7fd)}
+.rowline{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed #e2ebf6;font-size:12.5px}
+.rowline:last-child{border:none}
+.ent{cursor:pointer;border-radius:8px;padding:7px 11px;border:1.5px solid #cfe0f5;background:#fff;font-size:12.5px;
+ transition:.15s;user-select:none;font-weight:600}
+.ent:hover{border-color:#1F7FC0;transform:translateY(-1px)}
+.ent.on{background:#ecfdf5;border-color:#059669;color:#065f46}
+.ent.off{background:#f8fafc;color:#64748b}
+.ent.danger{background:#fef2f2;border-color:#b91c1c;color:#7f1d1d}
+.ent.used{opacity:.55}
+.ent.pop{animation:pop .3s}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+.statebox{font-size:12.5px;line-height:1.9}
+.statebox b{color:#0B3D91}
+.log{max-height:220px;overflow:auto;font-size:12.5px;line-height:1.65}
+.log div{padding:6px 9px;border-radius:7px;margin-bottom:5px}
+.log .ok{background:#f0fdf4;color:#065f46;border-left:3px solid #059669}
+.log .no{background:#fef2f2;color:#7f1d1d;border-left:3px solid #b91c1c}
+.log .wt{background:#fffbeb;color:#92400e;border-left:3px solid #F5A623}
+.bar{height:7px;background:#e3ecf7;border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#059669,#F5A623);width:0;transition:.3s}
+button{border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:#0B3D91;color:#fff}
+.small{font-size:11.5px;color:#7d93ad;line-height:1.6}
+.veto{background:#fef2f2;border:1px solid #fca5a5;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#7f1d1d;margin-top:8px}
+</style></head><body><div class="wrap">
+<header><svg width="44" height="44" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff" opacity=".16"/>
+<path d="M18 46a32 32 0 0 1 64 0z" fill="#F5A623"/><circle cx="50" cy="56" r="24" fill="#ffe0bd"/>
+<circle cx="41" cy="53" r="3" fill="#0b2545"/><circle cx="59" cy="53" r="3" fill="#0b2545"/>
+<path d="M42 64q8 6 16 0" stroke="#0b2545" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+<div><h1>1.4 二次安全措施执行台（B 级仿真）</h1><div class="sub">B 级交互式步骤仿真 · 点实体改变状态 · 顺错即报错</div></div>
+<div class="hud"><div>已做<b id="done">0</b></div><div>得分<b id="sc">100</b></div><div>否决<b id="vt">0</b></div></div></header>
+<div class="grid">
+ <div class="card">
+  <h3>操作台 —— 110kV 线路保护屏 + 端子排 + 试验电源</h3>
+  <div class="small" style="margin-bottom:8px">初始状态：保护运行中；压板全部投入；跳合闸回路接通；TA 二次回路唯一接地点在位</div>
+  <div class="stage" id="stage"></div>
+  <div class="bar"><i id="pg"></i></div>
+  <div style="margin-top:10px"><button onclick="restart()">重新开始</button></div>
+ </div>
+ <div class="card">
+  <h3>装置与系统状态</h3>
+  <div class="statebox" id="state"></div>
+  <h3 style="margin-top:12px">操作记录</h3>
+  <div class="log" id="log"></div>
+ </div>
+</div>
+<div class="card" style="margin-top:12px">
+ <div class="small"><b>目标结果：</b>按票顺序完成安措：办许可→断出口→退压板→短接 TA→隔离试验电源→开始作业；状态须全程可追</div>
+ <div class="veto" id="vetoBox"></div>
+ <div class="small" style="margin-top:6px">判分：初始 100 分，顺序错每次 −10；触发否决项即 0 分。回传：完成时长、错误步骤序列、否决触发、最终状态。</div>
+</div>
+</div><script>
+var SIM={"entities": [{"id": "permit", "label": "办理工作许可", "init": false, "okMsg": "运行人员许可，出口回路可用专用连片断开。", "wrongMsg": "未取得许可就动回路，可能直接跳运行设备。", "clause": "DL/T 995-2016 §5.2.2.6", "veto": true}, {"id": "outlet", "label": "用专用连片断开出口回路", "init": false, "okMsg": "出口回路已断开并登记。", "wrongMsg": "出口未断就退压板，仍可能出口。", "veto": true}, {"id": "plate", "label": "退出保护出口压板", "init": true, "okMsg": "出口压板已退出并记录。", "wrongMsg": "未断出口就退压板，顺序反了。"}, {"id": "ta", "label": "短接 TA 二次回路（短路片）", "init": false, "okMsg": "用短路片短接，未用导线缠绕。", "wrongMsg": "未短接即拆线会造成 TA 开路（高电压）。", "veto": true}, {"id": "pwr", "label": "接入检修试验电源", "init": false, "okMsg": "使用现场检修电源，未从运行设备取电。", "wrongMsg": "从运行设备接试验电源，扩大事故范围。", "clause": "DL/T 995-2016 §5.2.2.7", "veto": true}, {"id": "earth", "label": "保持 TA 二次回路唯一接地点", "init": true, "okMsg": "唯一接地点保持，未断开。", "wrongMsg": "断开唯一接地点，危及人身与测量。", "clause": "GB 26860-2011 §13.3", "veto": true}], "sequence": ["permit", "outlet", "plate", "ta", "pwr"], "stateRows": [{"label": "工作许可", "key": "permit", "okVal": true}, {"label": "出口回路", "key": "outlet", "okVal": true}, {"label": "出口压板", "key": "plate", "okVal": true}, {"label": "TA 短接", "key": "ta", "okVal": true}, {"label": "试验电源", "key": "pwr", "okVal": true}, {"label": "TA 接地点", "key": "earth", "okVal": true}], "vetoes": ["无许可作业", "出口未断即作业", "未短接即拆线", "从运行设备接电源", "断开唯一接地点"], "vetoLog": []};
+var st={}, order=[], score=100, vetoed=false, t0=Date.now();
+function initState(){ st={}; SIM.entities.forEach(function(e){ st[e.id]=e.init; }); order=[]; score=100; vetoed=false; t0=Date.now(); }
+function render(){
+ var S=document.getElementById('stage'); S.innerHTML='';
+ SIM.entities.forEach(function(e){
+   var d=document.createElement('div'); d.className='rowline';
+   var on=st[e.id]===(e.onVal===undefined?true:e.onVal);
+   var b=document.createElement('span');
+   b.className='ent '+(on?'on':'off'); b.textContent=e.label; b.dataset.id=e.id;
+   b.onclick=function(){ act(e.id); };
+   var t=document.createElement('span'); t.className='small'; t.innerHTML=e.hint||'';
+   d.appendChild(b); d.appendChild(t); S.appendChild(d);
+ });
+ renderState(); renderHud();
+}
+function renderState(){
+ var H='';
+ SIM.stateRows.forEach(function(r){
+   var v = r.fn ? r.fn(st) : st[r.key];
+   H += '<div>'+r.label+'：<b style="color:'+(v===r.okVal?'#047857':'#b91c1c')+'">'+v+'</b></div>';
+ });
+ document.getElementById('state').innerHTML=H;
+}
+function renderHud(){
+ document.getElementById('done').textContent=order.length;
+ document.getElementById('sc').textContent=vetoed?0:Math.max(score,0);
+ document.getElementById('vt').textContent=SIM.vetoLog.length;
+ document.getElementById('pg').style.width=(order.length/SIM.sequence.length*100)+'%';
+}
+function log(cls,txt){var L=document.getElementById('log');
+ L.insertAdjacentHTML('afterbegin','<div class="'+cls+'">'+txt+'</div>');}
+function act(id){
+ if(vetoed) return;
+ var e=SIM.entities.find(function(x){return x.id===id;});
+ var expect=SIM.sequence[order.length];
+ if(!e) return;
+ // 已是目标状态，重复点击无效
+ var on=st[id]===(e.onVal===undefined?true:e.onVal);
+ if(on && SIM.sequence.indexOf(id)<order.length) return;
+ if(id===expect){
+   st[id]=(e.onVal===undefined?true:e.onVal);
+   order.push(id);
+   log('ok','✅ '+e.okMsg+'　'+(e.clause?'〔'+e.clause+'〕':''));
+   render();
+   if(order.length===SIM.sequence.length) finish();
+ } else {
+   score-=10;
+   if(e.veto){ vetoed=true; SIM.vetoLog.push(e.label); log('no','⛔ '+e.wrongMsg+'　【触发否决项：'+e.label+'，本次 0 分】'); }
+   else { log('wt','⚠️ 顺序不对：'+e.wrongMsg+'（−10 分）'); }
+   renderHud();
+   if(vetoed) setTimeout(finish,500);
+ }
+}
+function finish(){
+ var final = vetoed?0:Math.max(score,0);
+ var pass = final>=60 && SIM.vetoLog.length===0;
+ var secs = Math.round((Date.now()-t0)/1000);
+ log(pass?'ok':'no','—— 仿真结束｜得分 '+final+'｜用时 '+secs+' 秒｜否决 '+SIM.vetoLog.length+' 次 ——');
+ if(!pass && !vetoed){ log('wt','未达 60 分：把顺序再走一遍，注意红色否决项。'); }
+ document.getElementById('stage').innerHTML='<div style="padding:20px;text-align:center">'+
+  '<div style="font-size:34px;font-weight:800;color:'+(pass?'#047857':'#b91c1c')+'">'+final+'</div>'+
+  '<div class="small" style="margin-top:6px">'+(pass?'通过':'未通过')+'｜用时 '+secs+' 秒</div></div>';
+ document.getElementById('pg').style.width='100%';
+}
+function restart(){ initState(); document.getElementById('log').innerHTML=''; render(); }
+document.getElementById('vetoBox').innerHTML='<b>否决项：</b>'+SIM.vetoes.map(function(v,i){return (i+1)+'. '+v;}).join('　');
+initState(); render();
+</script></body></html>
